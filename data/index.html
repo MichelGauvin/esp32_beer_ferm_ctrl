@@ -1,0 +1,129 @@
+<!DOCTYPE HTML><html>
+<!-- Rui Santos - Complete project details at https://RandomNerdTutorials.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software. -->
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+  <style>
+    body {
+      min-width: 310px;
+    	max-width: 800px;
+    	height: 400px;
+      margin: 0 auto;
+    }
+    h2 {
+      font-family: Arial;
+      font-size: 2.5rem;
+      text-align: center;
+    }
+    .progress-bar {
+      width: 100%;
+      background-color: #f1f1f1;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress {
+      width: 0;
+      height: 30px;
+      background-color: #4CAF50;
+      text-align: center;
+      line-height: 30px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h2>Temp&#233rature garage Michel</h2>
+  <div id="chart-temperature" class="container"></div>
+  <input id="value" class="form-control" type="text" value="" aria-label="readonly input example" size="2">
+  <form action="/get" target="hidden-form">
+    inputFloat (current value %inputFloat%): <input type="number " name="inputFloat">
+    <input type="submit" value="Submit" onclick="submitMessage()">
+  </form>
+  <h1>Fermenter 1 Data</h1>
+  <p>Setpoint: <span id="setpoint">Loading...</span></p>
+  <p>Temperature: <span id="tc1TempC">Loading...</span> °C</p>
+  <p>Output: <span id="output">Loading...</span></p>
+  <p>Next Pump Cycle Time: <span id="nextPumpCycleTime">Loading...</span> seconds</p>
+  <p>Pump Status: <span id="pumpStatus">Loading...</span></p>
+
+  <script>
+function fetchData() {
+      fetch('/ferm1data') // Adjust endpoint as per your Arduino setup
+        .then(response => response.json())
+        .then(data => {
+          // Update HTML elements with fetched data
+          document.getElementById('setpoint').innerText = data.setpoint;
+          document.getElementById('tc1TempC').innerText = data.tc1TempC;
+          document.getElementById('output').innerText = data.output;
+          document.getElementById('nextPumpCycleTime').innerText = data.nextPumpCycleTime;
+          document.getElementById('pumpStatus').innerText = data.pumpStatus ? 'ON' : 'OFF';
+        });
+    }
+
+    // Fetch data initially when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      fetchData();
+
+      // Fetch data every 5 seconds (adjust timing as needed)
+      setInterval(fetchData, 500);
+    });
+  </script>
+</body>
+<script>
+var chartT = new Highcharts.Chart({
+  chart:{ renderTo : 'chart-temperature' },
+  title: { text: 'Temp&#233rature' },
+  series: [{
+    showInLegend: false,
+    data: []
+  }],
+  plotOptions: {
+    line: { animation: false,
+      dataLabels: { enabled: false }
+    },
+    series: { color: '#059e8a' }
+  },
+  xAxis: { type: 'datetime',
+    dateTimeLabelFormats: { second: '%H:%M:%S' }
+  },
+  
+  time: {
+    useUTC: false
+  },
+  
+  yAxis: {
+    title: { text: 'Temperature (Celsius)' }
+    //title: { text: 'Temperature (Fahrenheit)' }
+  },
+  credits: { enabled: false }
+});
+chartT.yAxis[0].setExtremes(8,30);
+setInterval(function ( ) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var x = (new Date()).getTime(),
+          y = parseFloat(this.responseText);
+      //console.log(this.responseText);
+      if(chartT.series[0].data.length > 600) {
+        chartT.series[0].addPoint([x, y], true, true, true);
+      } else {
+        chartT.series[0].addPoint([x, y], true, false, true);
+      }
+	  document.getElementById("value").value = y.toFixed(2);
+    }
+  };
+  xhttp.open("GET", "/temperature", true);
+  xhttp.send();
+}, 1000 ) ;
+</script>
+</html>
