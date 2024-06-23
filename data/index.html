@@ -48,35 +48,13 @@ copies or substantial portions of the Software. -->
     inputFloat (current value %inputFloat%): <input type="number " name="inputFloat">
     <input type="submit" value="Submit" onclick="submitMessage()">
   </form>
-  <h1>Fermenter 1 Data</h1>
-  <p>Setpoint: <span id="setpoint">Loading...</span></p>
-  <p>Temperature: <span id="tc1TempC">Loading...</span> °C</p>
-  <p>Output: <span id="output">Loading...</span></p>
-  <p>Next Pump Cycle Time: <span id="nextPumpCycleTime">Loading...</span> seconds</p>
-  <p>Pump Status: <span id="pumpStatus">Loading...</span></p>
-
-  <script>
-function fetchData() {
-      fetch('/ferm1data') // Adjust endpoint as per your Arduino setup
-        .then(response => response.json())
-        .then(data => {
-          // Update HTML elements with fetched data
-          document.getElementById('setpoint').innerText = data.setpoint;
-          document.getElementById('tc1TempC').innerText = data.tc1TempC;
-          document.getElementById('output').innerText = data.output;
-          document.getElementById('nextPumpCycleTime').innerText = data.nextPumpCycleTime;
-          document.getElementById('pumpStatus').innerText = data.pumpStatus ? 'ON' : 'OFF';
-        });
-    }
-
-    // Fetch data initially when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      fetchData();
-
-      // Fetch data every 5 seconds (adjust timing as needed)
-      setInterval(fetchData, 500);
-    });
-  </script>
+  <h1>Real-time Updates from NodeMCU</h1>
+  <div id="setpoint">Temperature: Waiting for updates...</div>
+  <div id="tc1TempC">Humidity: Waiting for updates...</div>
+  <div id="output">output: Waiting for updates...</div>
+  <div id="nextPumpCycleTime">nextPumpCycleTime: Waiting for updates...</div>
+  <div id="pumpStatus">pumpStatus: Waiting for updates...</div>
+  <div id="fermStatus">fermStatus: Waiting for updates...</div>
 </body>
 <script>
 var chartT = new Highcharts.Chart({
@@ -125,5 +103,30 @@ setInterval(function ( ) {
   xhttp.open("GET", "/temperature", true);
   xhttp.send();
 }, 1000 ) ;
+
+//const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');  // Replace with your NodeMCU IP address
+const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/wss');  // Replace with your NodeMCU IP address
+
+ws.onopen = function() {
+  console.log('WebSocket connection established');
+};
+
+ws.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  document.getElementById('setpoint').innerText = 'Setpoint: ' + data.temperature;
+  document.getElementById('tc1TempC').innerText = 'Temperature: ' + data.humidity;
+  document.getElementById('output').innerText = 'Output: ' + data.output;
+  document.getElementById('nextPumpCycleTime').innerText = 'nextPumpCycleTime: ' + data.nextPumpCycleTime;
+  document.getElementById('pumpStatus').innerText = 'pumpStatus: ' + data.pumpStatus;
+  document.getElementById('fermStatus').innerText = 'fermStatus: ' + data.fermStatus;
+};
+
+ws.onclose = function() {
+  console.log('WebSocket connection closed');
+};
+
+ws.onerror = function(error) {
+  console.log('WebSocket error: ', error);
+};
 </script>
 </html>

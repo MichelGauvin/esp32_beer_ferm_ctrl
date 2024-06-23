@@ -25,6 +25,7 @@
 #include <LittleFS.h>
 #include <ESPAsyncWiFiManager.h>
 #include <ArduinoJson.h>
+#include <WebSocketsServer.h>
 
 #define RELAY1 12
 #define RELAY2 13
@@ -121,10 +122,8 @@ unsigned long currentMillis = 0;
 
 struct FermenterData
 {
-  long identifier;
   float setpoint;
   float tc1TempC;
-  float tc2TempC;
   double output;
   float nextPumpCycleTime;
   bool pumpStatus;
@@ -135,15 +134,14 @@ struct FermenterData
     StaticJsonDocument<200> doc; // Adjust the size as per your data complexity
     doc["setpoint"] = setpoint;
     doc["tc1TempC"] = tc1TempC;
-    doc["tc2TempC"] = tc2TempC;
     doc["output"] = output;
     doc["nextPumpCycleTime"] = nextPumpCycleTime;
     doc["pumpStatus"] = pumpStatus;
     doc["fermStatus"] = fermStatus;
     
-    String output;
-    serializeJson(doc, output);
-    return output;
+    String jsonOutput;
+    serializeJson(doc, jsonOutput);
+    return jsonOutput;
   }
 };
 FermenterData ferm1Data;
@@ -185,16 +183,37 @@ float ferm4AvgTemp = 0;
 int i = 0;
 //*********** END FIRMWARE VARIABLES DEFINITIONS **********************
 
-//
-// Payload
-//
+//*********** Create a WebSocket server object on port 81 *************
+WebSocketsServer webSocket = WebSocketsServer(3333);
 
-const int min_payload_size = 4;
-const int max_payload_size = 32;
-const int payload_size_increments_by = 1;
-int next_payload_size = min_payload_size;
-
-char receive_payload[max_payload_size + 1]; // +1 to allow room for a terminating NULL char
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[%u] Disconnected!\n", num);
+      break;
+    case WStype_CONNECTED:
+      {
+        IPAddress ip = webSocket.remoteIP(num);
+        Serial.printf("[%u] Connection from ", num);
+        Serial.println(ip.toString());
+        
+        // Send a welcome message to the client
+        StaticJsonDocument<200> doc;
+        doc["message"] = "Welcome to the WebSocket server!";
+        String json;
+        serializeJson(doc, json);
+        webSocket.sendTXT(num, json);
+      }
+      break;
+    case WStype_TEXT:
+      Serial.printf("[%u] Received text: %s\n", num, payload);
+      
+      // Echo the received message back to the client
+      webSocket.sendTXT(num, payload);
+      break;
+  }
+}
+//*********** END WebSocket server object on port 81 ******************
 
 void setup()
 {
@@ -349,12 +368,21 @@ void setup()
   tc_read_last_millis = millis();
   read_tc = false;
 
+////************************ Start the WebSocket server *******************
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+
+  Serial.println("WebSocket server started.");
+
   //************************ END TEMPERATURE READING SETUP ****************
   Serial.println(" ENDSETUP ");
 }
 
 void loop()
 {
+
+  // Handle WebSocket events
+  webSocket.loop();
 
   currentMillis = millis();
 
@@ -364,6 +392,10 @@ void loop()
     // Put the radio in listening mode, and verify for new ferm1_Setpoint.
     delay(500);
     currentMillis = millis();
+    
+    ferm1Data.output++;
+    String json = ferm1Data.toJson();
+    webSocket.broadcastTXT(json);
 
     // Read TC every tc_read_interval_millis = X ms
     if ((millis() - tc_read_last_millis) >= tc_read_interval_millis)
@@ -383,7 +415,6 @@ void loop()
   if (read_tc == true)
   {
     ferm1Data.tc1TempC = sensors.getTempC(TC1);
-    ferm1Data.tc2TempC = sensors.getTempC(TC2);
     ferm2Data.tc1TempC = sensors.getTempC(TC4); // On utilise ce TC pour le ferm2 puisque l'autre ne fonctionne plus bien.
     ferm3Data.tc1TempC = sensors.getTempC(TC3);
     ferm4Data.tc1TempC = sensors.getTempC(TC5);
@@ -702,4 +733,5 @@ void loop()
   ferm3Data.fermStatus = ferm3_Status;
   ferm4Data.fermStatus = ferm4_Status;
   */
+
 }
