@@ -55,6 +55,28 @@ copies or substantial portions of the Software. -->
   <div id="nextPumpCycleTime">nextPumpCycleTime: Waiting for updates...</div>
   <div id="pumpStatus">pumpStatus: Waiting for updates...</div>
   <div id="fermStatus">fermStatus: Waiting for updates...</div>
+
+  <h1>Send Data to ESP</h1>
+  
+  <h2>Form 1</h2>
+  <form id="form1" onsubmit="event.preventDefault(); sendData('form1');">
+    <label for="input1">Input 1:</label>
+    <input type="text" id="input1" name="input1"><br>
+    <label for="input2">Input 2:</label>
+    <input type="text" id="input2" name="input2"><br>
+    <input type="submit" value="Send">
+  </form>
+  <div id="form1-response"></div>
+
+  <h2>Form 2</h2>
+  <form id="form2" onsubmit="event.preventDefault(); sendData('form2');">
+    <label for="input3">Input 3:</label>
+    <input type="text" id="input3" name="input3"><br>
+    <label for="input4">Input 4:</label>
+    <input type="text" id="input4" name="input4"><br>
+    <input type="submit" value="Send">
+  </form>
+  <div id="form2-response"></div>
 </body>
 <script>
 var chartT = new Highcharts.Chart({
@@ -128,5 +150,29 @@ ws.onclose = function() {
 ws.onerror = function(error) {
   console.log('WebSocket error: ', error);
 };
+
+function sendData(formId) {
+      var xhr = new XMLHttpRequest();
+      var url = "/post";
+      var form = document.getElementById(formId);
+      var data = {};
+
+      // Get all input elements in the form
+      var inputs = form.getElementsByTagName('input');
+      for (var i = 0; i < inputs.length; i++) {
+        data[inputs[i].name] = inputs[i].value;
+      }
+
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          document.getElementById(formId + "-response").innerHTML = xhr.responseText;
+        }
+      };
+      xhr.send(JSON.stringify(data));
+    }
+
 </script>
 </html>

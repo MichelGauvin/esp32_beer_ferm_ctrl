@@ -290,6 +290,27 @@ void setup()
                 ", \"pumpStatus\": " + String(ferm1Data.pumpStatus) + "}";
   request->send(200, "application/json", json);
 });
+
+server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, data);
+
+    if (error) {
+      Serial.print("deserializeJson() failed: ");
+      Serial.println(error.c_str());
+      request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+      return;
+    }
+
+    for (JsonPair kv : doc.as<JsonObject>()) {
+      Serial.print(kv.key().c_str());
+      Serial.print(": ");
+      Serial.println(kv.value().as<const char*>());
+    }
+
+    request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"JSON data received\"}");
+  });
+
   // ******************************************************************
   server.begin();
 
@@ -543,3 +564,26 @@ void loop()
 */ 
 
 }
+
+
+/*
+Explanation
+HTML and JavaScript:
+
+Two forms are created, each with unique IDs (form1 and form2).
+The sendData(formId) function is called when either form is submitted. It prevents the default form submission behavior and sends an AJAX POST request to the server with the form data as a JSON object.
+The function collects all input elements from the form, creates a JSON object, and sends it to the server.
+NodeMCU Server:
+
+The server listens for GET requests on the root path ("/") and POST requests on the "/post" path.
+When a POST request is received on "/post", the server parses the JSON data using the ArduinoJson library.
+The parsed values are printed to the Serial Monitor, and a response is sent back to the client.
+Running the Code
+Replace "your_SSID" and "your_PASSWORD" with your WiFi credentials.
+Install the ESPAsyncWebServer and ArduinoJson libraries in the Arduino IDE.
+Upload the NodeMCU code to your ESP8266/ESP32.
+Open the Serial Monitor to see the incoming data.
+Open the IP address of your NodeMCU in a web browser to access the forms.
+Enter values in the forms and submit them. The page will update the response without reloading, and you'll see the input values printed in the Serial Monitor.
+This approach allows you to handle multiple forms, each submitting its data independently, and process them as needed on the NodeMCU.
+*/
