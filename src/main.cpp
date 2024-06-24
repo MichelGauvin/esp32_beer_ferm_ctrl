@@ -14,7 +14,7 @@
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <MovingAverage.h>
+#include <MovingAveragePlus.h>
 #include <SPI.h>
 #include <PID_v1.h>
 #include "EEPROM.h"
@@ -48,11 +48,15 @@
 //Test pour recevoir un paramètre.
 const char* PARAM_INPUT_1 = "input1";
 
+
+//const char* ssid = "Michel";
+//const char* password = "Mikego20";
+
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 DNSServer dns;
 
-//************************ PID DEFINITION *************************
+//************************ PID DEFINITION****************************
 // Define Variables we'll be connecting to
 double ferm1_Setpoint, ferm1_Input, ferm1_Output;
 double ferm2_Setpoint, ferm2_Input, ferm2_Output;
@@ -60,9 +64,6 @@ double ferm3_Setpoint, ferm3_Input, ferm3_Output;
 double ferm4_Setpoint, ferm4_Input, ferm4_Output;
 
 bool ferm1_Status, ferm2_Status, ferm3_Status, ferm4_Status;
-
-// Specify the links and initial tuning parameters
-// double Kp = 220, Ki = 2.5, Kd = 0;
 
 // Petit fermenteur
 double Kp = 70, Ki = 1, Kd = 0;
@@ -98,10 +99,10 @@ uint8_t TC3[8] = {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}; //
 uint8_t TC4[8] = {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92};
 uint8_t TC5[8] = {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80};
 
-MovingAverage<float, 8> ferm1MovAvg;
-MovingAverage<float, 8> ferm2MovAvg;
-MovingAverage<float, 8> ferm3MovAvg;
-MovingAverage<float, 8> ferm4MovAvg;
+MovingAveragePlus<float> ferm1MovAvg(5);
+MovingAveragePlus<float> ferm2MovAvg(5);
+MovingAveragePlus<float> ferm3MovAvg(5);
+MovingAveragePlus<float> ferm4MovAvg(5);
 unsigned long tc_read_interval_millis = 1000;
 unsigned long tc_read_last_millis;
 bool read_tc;
@@ -118,6 +119,7 @@ unsigned long currentMillis = 0;
   Create a data structure for transmitting and receiving data
   This allows many variables to be easily sent and received in a single transmission
   See http://www.cplusplus.com/doc/tutorial/structures/
+  This data structure will be sent in json format.
 */
 
 struct FermenterData
@@ -144,10 +146,7 @@ struct FermenterData
     return jsonOutput;
   }
 };
-FermenterData ferm1Data;
-FermenterData ferm2Data;
-FermenterData ferm3Data;
-FermenterData ferm4Data;
+FermenterData ferm1Data, ferm2Data, ferm3Data, ferm4Data;
 
 struct ControlData
 {
@@ -175,12 +174,11 @@ float TC4_tempC = 10;
 float TC5_tempC = 10;
 float TC6_tempC = 10;
 
-float ferm1AvgTemp = 0;
-float ferm2AvgTemp = 0;
-float ferm3AvgTemp = 0;
-float ferm4AvgTemp = 0;
+float ferm1AvgTemp = 20;
+float ferm2AvgTemp = 20;
+float ferm3AvgTemp = 20;
+float ferm4AvgTemp = 20;
 
-int i = 0;
 //*********** END FIRMWARE VARIABLES DEFINITIONS **********************
 
 //*********** Create a WebSocket server object on port 81 *************
@@ -225,8 +223,17 @@ void setup()
   //************************ WIFI SETUP *******************************
   AsyncWiFiManager wifiManager(&server, &dns);
   wifiManager.autoConnect("AutoConnectAP");
-  // Print ESP32 Local IP Address
+  //Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
+  
+  /*
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+  */
   //************************ END WIFI SETUP ***************************
 
   //************************ START LITTLEFS SETUP *********************
@@ -378,24 +385,91 @@ void setup()
   Serial.println(" ENDSETUP ");
 }
 
+// Function to update next pump cycle time
+void updateNextPumpCycleTime() {
+  if (ferm1_Status == true) {
+    ferm1Data.nextPumpCycleTime = ((WindowSize * 1000 - (millis() - ferm1_windowStartTime)) + 500) / 1000;
+  } else {
+    ferm1Data.nextPumpCycleTime = 0;
+    ferm1Data.output = 0;
+  }
+
+  if (ferm2_Status == true) {
+    ferm2Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm2_windowStartTime)) / 1000;
+  } else {
+    ferm2Data.nextPumpCycleTime = 0;
+    ferm2Data.output = 0;
+  }
+
+  if (ferm3_Status == true) {
+    ferm3Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm3_windowStartTime)) / 1000;
+  } else {
+    ferm3Data.nextPumpCycleTime = 0;
+    ferm3Data.output = 0;
+  }
+
+  if (ferm4_Status == true) {
+    ferm4Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm4_windowStartTime)) / 1000;
+  } else {
+    ferm4Data.nextPumpCycleTime = 0;
+    ferm4Data.output = 0;
+  }
+}
+
+
+// Function to update output
+void updateOutput(double output, int relayPin, unsigned long &windowStartTime, FermenterData &data) {
+  if (millis() - windowStartTime > WindowSize * 1000) {
+    windowStartTime += WindowSize * 1000;
+  }
+  if (output * 1000 < millis() - windowStartTime) {
+    digitalWrite(relayPin, HIGH);
+    data.pumpStatus = false;
+  } else {
+    digitalWrite(relayPin, LOW);
+    data.pumpStatus = true;
+  }
+}
+
+// Function to handle the PID loop for a fermenter
+void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pid_i, int pid_T, PID &pid, MovingAveragePlus<float> &movAvg, FermenterData &data, int relay, unsigned long &windowStartTime) {
+  if (status) {
+    if (data.tc1TempC != -127) {
+      float avgTemp = movAvg.push(data.tc1TempC).get();
+      input = avgTemp;
+
+      // Compute PID output only every 30 seconds
+      if (pid_i + 1 >= pid_T) {
+        pid.Compute();
+        pid_i = 0;
+        if (output < 2) {
+          output = 0;
+        }
+      } else {
+        pid_i++;
+      }
+
+      // Turn the output pin on/off based on PID output
+      updateOutput(output, relay, windowStartTime, data);
+    }
+  } else {
+    windowStartTime = millis();
+  }
+}
+
 void loop()
 {
 
   // Handle WebSocket events
-  webSocket.loop();
-
   currentMillis = millis();
 
   while ((currentMillis - previousMillis) < interval)
   {
     // Execute all other code between two temperature measurement.
     // Put the radio in listening mode, and verify for new ferm1_Setpoint.
-    delay(500);
+    webSocket.loop();
+    delay(10);
     currentMillis = millis();
-    
-    ferm1Data.output++;
-    String json = ferm1Data.toJson();
-    webSocket.broadcastTXT(json);
 
     // Read TC every tc_read_interval_millis = X ms
     if ((millis() - tc_read_last_millis) >= tc_read_interval_millis)
@@ -406,6 +480,10 @@ void loop()
   }
 
   previousMillis = currentMillis;
+
+  ferm1Data.output++;
+  String json = ferm1Data.toJson();
+  webSocket.broadcastTXT(json);
 
   ferm1Data.setpoint = ferm1_Setpoint;
   ferm2Data.setpoint = ferm2_Setpoint;
@@ -423,222 +501,19 @@ void loop()
     sensors.requestTemperatures();
   }
 
-  //************************ FERMENTER 1 PID LOOP *************************
-  if (ferm1_Status == true)
-  {
-    if (ferm1Data.tc1TempC == -127)
-    {
-      // Do nothing
-    }
-    else
-    {
+    // FERMENTER 1 PID LOOP
+  handleFermenterPIDLoop(ferm1_Status, ferm1_Input, ferm1_Output, ferm1_pid_i, pid_T, ferm1_pid, ferm1MovAvg, ferm1Data, RELAY1, ferm1_windowStartTime);
 
-      ferm1AvgTemp = ferm1MovAvg.add(ferm1Data.tc1TempC);
-      ferm1_Input = ferm1AvgTemp;
+  // FERMENTER 2 PID LOOP
+  handleFermenterPIDLoop(ferm2_Status, ferm2_Input, ferm2_Output, ferm2_pid_i, pid_T, ferm2_pid, ferm2MovAvg, ferm2Data, RELAY2, ferm2_windowStartTime);
 
-      /************************************************
-        Compute PID Ferm1_Output only every 30 seconds
-      ************************************************/
-      if (ferm1_pid_i + 1 >= pid_T)
-      {
-        ferm1_pid.Compute();
-        ferm1_pid_i = 0;
-        if (ferm1_Output < 2)
-        {
-          ferm1_Output = 0;
-        }
-      }
-      else
-      {
-        ferm1_pid_i++;
-      }
+  // FERMENTER 3 PID LOOP
+  handleFermenterPIDLoop(ferm3_Status, ferm3_Input, ferm3_Output, ferm3_pid_i, pid_T, ferm3_pid, ferm3MovAvg, ferm3Data, RELAY3, ferm3_windowStartTime);
 
-      /************************************************
-        turn the ferm1_Output pin on/off based on pid ferm1_Output
-      ************************************************/
-      if (millis() - ferm1_windowStartTime > WindowSize * 1000)
-      { // time to shift the Relay Window
-        ferm1_windowStartTime += WindowSize * 1000;
-      }
-      if (ferm1_Output * 1000 < millis() - ferm1_windowStartTime)
-      {
-        digitalWrite(RELAY1, 1);
-        ferm1Data.pumpStatus = false;
-      }
-      else
-      {
-        digitalWrite(RELAY1, 0);
-        ferm1Data.pumpStatus = true;
-      }
-    }
-  }
-  else{
-    ferm1_windowStartTime = millis();
-  }
-  //************************ END FERMENTER 1 PID LOOP *********************
+  // FERMENTER 4 PID LOOP
+  handleFermenterPIDLoop(ferm4_Status, ferm4_Input, ferm4_Output, ferm4_pid_i, pid_T, ferm4_pid, ferm4MovAvg, ferm4Data, RELAY4, ferm4_windowStartTime);
 
-  //************************ FERMENTER 2 PID LOOP *************************
-  if (ferm2_Status == true)
-  {
-    if (ferm2Data.tc1TempC == -127)
-    {
-      // Do nothing
-    }
-    else
-    {
-
-      ferm2AvgTemp = ferm2MovAvg.add(ferm2Data.tc1TempC);
-      ferm2_Input = ferm2AvgTemp;
-
-      /************************************************
-        Compute PID ferm2_Output only every 30 seconds
-      ************************************************/
-      if (ferm2_pid_i + 1 >= pid_T)
-      {
-        ferm2_pid.Compute();
-        ferm2_pid_i = 0;
-        if (ferm2_Output < 2)
-        {
-          ferm2_Output = 0;
-        }
-      }
-      else
-      {
-        ferm2_pid_i++;
-      }
-
-      /************************************************
-        turn the ferm1_Output pin on/off based on pid ferm1_Output
-      ************************************************/
-      if (millis() - ferm2_windowStartTime > WindowSize * 1000)
-      { // time to shift the Relay Window
-        ferm2_windowStartTime += WindowSize * 1000;
-      }
-      if (ferm2_Output * 1000 < millis() - ferm2_windowStartTime)
-      {
-        digitalWrite(RELAY2, 1);
-        ferm2Data.pumpStatus = false;
-      }
-      else
-      {
-        digitalWrite(RELAY2, 0);
-        ferm2Data.pumpStatus = true;
-      }
-    }
-  }
-  else{
-    ferm2_windowStartTime = millis();
-  }
-  //************************ END FERMENTER 2 PID LOOP *********************
-
-  //************************ FERMENTER 3 PID LOOP *************************
-  if (ferm3_Status == true)
-  {
-    if (ferm3Data.tc1TempC == -127)
-    {
-      // Do nothing
-    }
-    else
-    {
-
-      ferm3AvgTemp = ferm3MovAvg.add(ferm3Data.tc1TempC);
-      ferm3_Input = ferm3AvgTemp;
-
-      /************************************************
-        Compute PID Ferm3_Output only every 30 seconds
-      ************************************************/
-      if (ferm3_pid_i + 1 >= pid_T)
-      {
-        ferm3_pid.Compute();
-        ferm3_pid_i = 0;
-        if (ferm3_Output < 2)
-        {
-          ferm3_Output = 0;
-        }
-      }
-      else
-      {
-        ferm3_pid_i++;
-      }
-
-      /************************************************
-        turn the ferm3_Output pin on/off based on pid ferm3_Output
-      ************************************************/
-      if (millis() - ferm3_windowStartTime > WindowSize * 1000)
-      { // time to shift the Relay Window
-        ferm3_windowStartTime += WindowSize * 1000;
-      }
-      if (ferm3_Output * 1000 < millis() - ferm3_windowStartTime)
-      {
-        digitalWrite(RELAY3, 1);
-        ferm3Data.pumpStatus = false;
-      }
-      else
-      {
-        digitalWrite(RELAY3, 0);
-        ferm3Data.pumpStatus = true;
-      }
-    }
-  }
-  else{
-    ferm3_windowStartTime = millis();
-  }
-  //************************ END FERMENTER 3 PID LOOP *********************
-
-  //************************ FERMENTER 4 PID LOOP *************************
-  if (ferm4_Status == true)
-  {
-    if (ferm4Data.tc1TempC == -127)
-    {
-      // Do nothing
-    }
-    else
-    {
-
-      ferm4AvgTemp = ferm4MovAvg.add(ferm4Data.tc1TempC);
-      ferm4_Input = ferm4AvgTemp;
-
-      /************************************************
-        Compute PID ferm4_Output only every 30 seconds
-      ************************************************/
-      if (ferm4_pid_i + 1 >= pid_T)
-      {
-        ferm4_pid.Compute();
-        ferm4_pid_i = 0;
-        if (ferm4_Output < 2)
-        {
-          ferm4_Output = 0;
-        }
-      }
-      else
-      {
-        ferm4_pid_i++;
-      }
-
-      /************************************************
-        turn the ferm4_Output pin on/off based on pid ferm4_Output
-      ************************************************/
-      if (millis() - ferm4_windowStartTime > WindowSize * 1000)
-      { // time to shift the Relay Window
-        ferm4_windowStartTime += WindowSize * 1000;
-      }
-      if (ferm4_Output * 1000 < millis() - ferm4_windowStartTime)
-      {
-        digitalWrite(RELAY4, 1);
-        ferm4Data.pumpStatus = false;
-      }
-      else
-      {
-        digitalWrite(RELAY4, 0);
-        ferm4Data.pumpStatus = true;
-      }
-    }
-  }
-  else{
-    ferm4_windowStartTime = millis();
-  }
-  //************************ END FERMENTER 4 PID LOOP *********************
-
+  updateNextPumpCycleTime();
   //
   //   Send data to RPI every X seconds
   //
@@ -647,56 +522,6 @@ void loop()
   ferm2Data.output = ferm2_Output;
   ferm3Data.output = ferm3_Output;
   ferm4Data.output = ferm4_Output;
-
-  // The +500 is to round to nearest integer
-  if (ferm1_Status == true)
-  {
-    ferm1Data.nextPumpCycleTime = ((WindowSize * 1000 - (millis() - ferm1_windowStartTime)) + 500) / 1000;
-  }
-  else
-  {
-    ferm1Data.nextPumpCycleTime = 0;
-    ferm1Data.output = 0;
-    // TODO If pump is "ON" turn it "OFF".
-    // This will also check for a master pump control in the future, the logic will also be implemented in the pid loop
-    // Master pump control let the operator to force the pump ON for the desired duration via web command
-  }
-  if (ferm2_Status == true)
-  {
-    ferm2Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm2_windowStartTime)) / 1000;
-  }
-  else
-  {
-    ferm2Data.nextPumpCycleTime = 0;
-    ferm2Data.output = 0;
-    // TODO If pump is "ON" turn it "OFF".
-    // This will also check for a master pump control in the future, the logic will also be implemented in the pid loop
-    // Master pump control let the operator to force the pump ON for the desired duration
-  }
-  if (ferm3_Status == true)
-  {
-    ferm3Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm3_windowStartTime)) / 1000;
-  }
-  else
-  {
-    ferm3Data.nextPumpCycleTime = 0;
-    ferm3Data.output = 0;
-    // TODO If pump is "ON" turn it "OFF".
-    // This will also check for a master pump control in the future, the logic will also be implemented in the pid loop
-    // Master pump control let the operator to force the pump ON for the desired duration
-  }
-  if (ferm4_Status == true)
-  {
-    ferm4Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm4_windowStartTime)) / 1000;
-  }
-  else
-  {
-    ferm4Data.nextPumpCycleTime = 0;
-    ferm4Data.output = 0;
-    // TODO If pump is "ON" turn it "OFF".
-    // This will also check for a master pump control in the future, the logic will also be implemented in the pid loop
-    // Master pump control let the operator to force the pump ON for the desired duration
-  }
 
   // First, stop listening so we can talk.
   // radio.stopListening();
@@ -728,10 +553,11 @@ void loop()
   EEPROM.get(EEPROM_ADDR_FERM2STATUS, ferm2_Status);
   EEPROM.get(EEPROM_ADDR_FERM3STATUS, ferm3_Status);
   EEPROM.get(EEPROM_ADDR_FERM4STATUS, ferm4_Status);
+ */ 
   ferm1Data.fermStatus = ferm1_Status;
   ferm2Data.fermStatus = ferm2_Status;
   ferm3Data.fermStatus = ferm3_Status;
   ferm4Data.fermStatus = ferm4_Status;
-  */
+  
 
 }

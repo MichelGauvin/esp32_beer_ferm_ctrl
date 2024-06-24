@@ -113,8 +113,8 @@ ws.onopen = function() {
 
 ws.onmessage = function(event) {
   const data = JSON.parse(event.data);
-  document.getElementById('setpoint').innerText = 'Setpoint: ' + data.temperature;
-  document.getElementById('tc1TempC').innerText = 'Temperature: ' + data.humidity;
+  document.getElementById('setpoint').innerText = 'Setpoint: ' + data.setpoint;
+  document.getElementById('tc1TempC').innerText = 'Temperature: ' + data.tc1TempC;
   document.getElementById('output').innerText = 'Output: ' + data.output;
   document.getElementById('nextPumpCycleTime').innerText = 'nextPumpCycleTime: ' + data.nextPumpCycleTime;
   document.getElementById('pumpStatus').innerText = 'pumpStatus: ' + data.pumpStatus;
