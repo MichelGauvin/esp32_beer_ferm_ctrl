@@ -485,10 +485,6 @@ void loop()
 
   previousMillis = currentMillis;
 
-  ferm1Data.output++;
-  String json = ferm1Data.toJson();
-  webSocket.broadcastTXT(json);
-
   ferm1Data.setpoint = ferm1_Setpoint;
   ferm2Data.setpoint = ferm2_Setpoint;
   ferm3Data.setpoint = ferm3_Setpoint;
@@ -518,14 +514,19 @@ void loop()
   handleFermenterPIDLoop(ferm4_Status, ferm4_Input, ferm4_Output, ferm4_pid_i, pid_T, ferm4_pid, ferm4MovAvg, ferm4Data, RELAY4, ferm4_windowStartTime);
 
   updateNextPumpCycleTime();
-  //
-  //   Send data to RPI every X seconds
-  //
 
   ferm1Data.output = ferm1_Output;
   ferm2Data.output = ferm2_Output;
   ferm3Data.output = ferm3_Output;
   ferm4Data.output = ferm4_Output;
+
+  ferm1Data.fermStatus = ferm1_Status;
+  ferm2Data.fermStatus = ferm2_Status;
+  ferm3Data.fermStatus = ferm3_Status;
+  ferm4Data.fermStatus = ferm4_Status;
+
+  String json = ferm1Data.toJson();
+  webSocket.broadcastTXT(json);
 
   // First, stop listening so we can talk.
   // radio.stopListening();
@@ -539,29 +540,6 @@ void loop()
 
   String message = "****************************\r\n" + message1 + "\r\n" + message2 + "\r\n" + message3 + "\r\n" + message4;
   Serial.println(message);
-*/
-/*
-  EEPROM.put(EEPROM_ADDR_SETPOINT1, controlData.ferm1_setpoint);
-  EEPROM.put(EEPROM_ADDR_SETPOINT2, controlData.ferm2_setpoint);
-  EEPROM.put(EEPROM_ADDR_SETPOINT3, controlData.ferm3_setpoint);
-  EEPROM.put(EEPROM_ADDR_SETPOINT4, controlData.ferm4_setpoint);
-  EEPROM.put(EEPROM_ADDR_FERM1STATUS, controlData.ferm1_status);
-  EEPROM.put(EEPROM_ADDR_FERM2STATUS, controlData.ferm2_status);
-  EEPROM.put(EEPROM_ADDR_FERM3STATUS, controlData.ferm3_status);
-  EEPROM.put(EEPROM_ADDR_FERM4STATUS, controlData.ferm4_status);
-  EEPROM.get(EEPROM_ADDR_SETPOINT1, ferm1_Setpoint);
-  EEPROM.get(EEPROM_ADDR_SETPOINT2, ferm2_Setpoint);
-  EEPROM.get(EEPROM_ADDR_SETPOINT3, ferm3_Setpoint);
-  EEPROM.get(EEPROM_ADDR_SETPOINT4, ferm4_Setpoint);
-  EEPROM.get(EEPROM_ADDR_FERM1STATUS, ferm1_Status);
-  EEPROM.get(EEPROM_ADDR_FERM2STATUS, ferm2_Status);
-  EEPROM.get(EEPROM_ADDR_FERM3STATUS, ferm3_Status);
-  EEPROM.get(EEPROM_ADDR_FERM4STATUS, ferm4_Status);
- */ 
-  ferm1Data.fermStatus = ferm1_Status;
-  ferm2Data.fermStatus = ferm2_Status;
-  ferm3Data.fermStatus = ferm3_Status;
-  ferm4Data.fermStatus = ferm4_Status;
-  
+*/ 
 
 }
