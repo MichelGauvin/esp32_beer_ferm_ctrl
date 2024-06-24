@@ -460,15 +460,19 @@ void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pi
 void loop()
 {
 
-  // Handle WebSocket events
+  
   currentMillis = millis();
 
   while ((currentMillis - previousMillis) < interval)
   {
     // Execute all other code between two temperature measurement.
     // Put the radio in listening mode, and verify for new ferm1_Setpoint.
+    
+    // Handle WebSocket events
     webSocket.loop();
+    
     delay(10);
+    
     currentMillis = millis();
 
     // Read TC every tc_read_interval_millis = X ms
