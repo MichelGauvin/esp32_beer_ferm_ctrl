@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootstrap Equalizer</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #282c34;
+            color: white;
+        }
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 15px;
+            margin-bottom: 40px;
+        }
+        .slider-background {
+            position: absolute;
+            width: 100%;
+            height: 15px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+        .slider-fill {
+            position: absolute;
+            height: 100%;
+            background: #468d2a;
+            border-radius: 5px;
+        }
+        .slider {
+            -webkit-appearance: none;
+            position: absolute;
+            width: 100%;
+            height: 15px;
+            background: transparent;
+            outline: none;
+            z-index: 1;
+        }
+        .slider:hover {
+            opacity: 1;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 5px;
+            height: 25px;
+            background: #e20707;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #fff;
+            cursor: pointer;
+        }
+        .equalizer {
+            padding: 20px;
+        }
+        .slider-value {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .slider-background::after, .slider-fill::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+        }
+        .slider-fill::after {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container equalizer">
+    <h2 class="text-center">Sound System Equalizer</h2>
+    <div class="row">
+        <div class="col">
+            <div class="slider-container">
+                <div class="slider-background" data-text="Pump Off">
+                    <div class="slider-fill" id="slider1-fill" data-text="Pump On"></div>
+                </div>
+                <input type="range" min="1" max="100" value="50" class="slider" id="slider1">
+            </div>
+            <p class="slider-value">Value: <span id="value1">50</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap and jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    $(document).ready(function(){
+        // Example function to fetch values from the server
+        function fetchValuesFromServer() {
+            return new Promise((resolve) => {
+                // Simulate a server response
+                setTimeout(() => {
+                    resolve({
+                        slider1: 30
+                    });
+                }, 1000);
+            });
+        }
+
+        // Function to update the slider fill based on value
+        function updateSliderFill(sliderId, value) {
+            var percentage = value + "%";
+            $("#" + sliderId + "-fill").css('width', percentage);
+        }
+
+        // Fetch values from the server and update sliders
+        fetchValuesFromServer().then((data) => {
+            for (var sliderId in data) {
+                var value = data[sliderId];
+                updateSliderFill(sliderId, value);
+            }
+        });
+
+        // Update the current slider value (each time you drag the slider handle)
+        $(".slider").on("input", function() {
+            var sliderId = $(this).attr("id");
+            var value = $(this).val();
+            $("#value" + sliderId.slice(-1)).text(value);
+        });
+    });
+</script>
+
+</body>
+</html>
