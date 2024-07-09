@@ -10,38 +10,63 @@
         body {
             background-color: #282c34;
             color: white;
+            font-family: Arial, sans-serif;
+        }
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 50px;
+            margin-bottom: 40px;
+        }
+        .slider-background {
+            position: absolute;
+            width: 100%;
+            height: 15px;
+            background: #ddd;
+            border-radius: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .slider-fill {
+            position: absolute;
+            height: 100%;
+            background: #4CAF50;
+            border-radius: 5px;
+            top: 50%;
+            transform: translateY(-50%);
         }
         .slider {
             -webkit-appearance: none;
+            position: absolute;
             width: 100%;
             height: 15px;
-            background: linear-gradient(to right, #4CAF50 70%, #ddd 70%);
+            background: transparent;
             outline: none;
-            opacity: 0.7;
-            transition: opacity .2s;
-        }
-        .slider:hover {
-            opacity: 1;
-        }
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 25px;
-            height: 25px;
-            background: #fff;
-            cursor: pointer;
-        }
-        .slider::-moz-range-thumb {
-            width: 25px;
-            height: 25px;
-            background: #fff;
-            cursor: pointer;
-        }
-        .equalizer {
-            padding: 20px;
+            z-index: 1;
+            top: 50%;
+            transform: translateY(-50%);
         }
         .slider-value {
+            position: absolute;
+            bottom: -25px;
+            width: 100%;
             text-align: center;
+        }
+        .slider-text {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            text-align: center;
+            color: black;
+            font-size: 12px;
+            pointer-events: none; /* Prevent text from interfering with slider */
+        }
+        .slider-text-left {
+            left: 0;
+        }
+        .slider-text-right {
+            right: 0;
         }
     </style>
 </head>
@@ -49,28 +74,14 @@
 
 <div class="container equalizer">
     <h2 class="text-center">Sound System Equalizer</h2>
-    <div class="row">
-        <div class="col">
-            <input type="range" min="1" max="100" value="50" class="slider" id="slider1">
-            <p class="slider-value">Value: <span id="value1">50</span></p>
-        </div>
-        <div class="col">
-            <input type="range" min="1" max="100" value="50" class="slider" id="slider2">
-            <p class="slider-value">Value: <span id="value2">50</span></p>
-        </div>
-        <div class="col">
-            <input type="range" min="1" max="100" value="50" class="slider" id="slider3">
-            <p class="slider-value">Value: <span id="value3">50</span></p>
-        </div>
-        <div class="col">
-            <input type="range" min="1" max="100" value="50" class="slider" id="slider4">
-            <p class="slider-value">Value: <span id="value4">50</span></p>
-        </div>
-        <div class="col">
-            <input type="range" min="1" max="100" value="50" class="slider" id="slider5">
-            <p class="slider-value">Value: <span id="value5">50</span></p>
-        </div>
+    <div class="slider-container">
+        <div class="slider-background"></div>
+        <div class="slider-fill" id="slider1-fill"></div>
+        <input type="range" min="1" max="100" value="50" class="slider" id="slider1">
+        <div class="slider-text slider-text-left" id="slider1-text-left">Unfilled</div>
+        <div class="slider-text slider-text-right" id="slider1-text-right">Filled</div>
     </div>
+    <p class="slider-value">Value: <span id="value1">50</span></p>
 </div>
 
 <!-- Bootstrap and jQuery -->
@@ -80,10 +91,41 @@
 
 <script>
     $(document).ready(function(){
-        $(".slider").on("input", function() {
-            var sliderId = $(this).attr("id");
-            var valueId = "value" + sliderId.slice(-1);
-            $("#" + valueId).text($(this).val());
+        // Example function to fetch values from the server
+        function fetchValuesFromServer() {
+            return new Promise((resolve) => {
+                // Simulate a server response
+                setTimeout(() => {
+                    resolve({
+                        slider1: 70
+                    });
+                }, 1000);
+            });
+        }
+
+        // Function to update the slider fill based on value
+        function updateSliderFill(sliderId, value) {
+            var percentage = value + "%";
+            $("#" + sliderId + "-fill").css('width', percentage);
+            // Update the text labels (static)
+            $("#slider1-text-left").text("Unfilled");
+            $("#slider1-text-right").text("Filled");
+        }
+
+        // Fetch values from the server and update sliders
+        fetchValuesFromServer().then((data) => {
+            for (var sliderId in data) {
+                var value = data[sliderId];
+                updateSliderFill(sliderId, value);
+                $("#value1").text(value);
+            }
+        });
+
+        // Update the current slider value (each time you drag the slider handle)
+        $("#slider1").on("input", function() {
+            var value = $(this).val();
+            $("#value1").text(value);
+            updateSliderFill("slider1", value);
         });
     });
 </script>
