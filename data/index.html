@@ -4,111 +4,349 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Temperature Monitoring</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <script src="https://code.highcharts.com/highcharts.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+    integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+    crossorigin="anonymous"></script>
   <style>
     body {
-      margin: 0 auto;
+      margin: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+    }
+    .container {
+      background-color: #fff;
       padding: 20px;
-      max-width: 800px;
+      border-radius: 8px;
+      box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
     }
     h2 {
-      font-family: Arial, sans-serif;
       font-size: 2.5rem;
       text-align: center;
-      margin-bottom: 20px;
-    }
-    .progress-bar {
-      width: 100%;
-      background-color: #f1f1f1;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-    .progress {
-      width: 0;
-      height: 30px;
-      background-color: #4CAF50;
-      text-align: center;
-      line-height: 30px;
-      color: white;
+      margin-bottom: 30px;
     }
     .form-control {
-      border: 2px solid #0d6efd; /* Bootstrap primary button color */
+      border: 2px solid #0f3f88;
+    }
+    .btn-toggle-on {
+      background-color: #198754;
+      color: #fff;
+      border: none;
+    }
+    .btn-toggle-off {
+      background-color: #8b1616;
+      color: #fff;
+      border: none;
+    }
+    .box {
+      border: 1px solid #0f3f88;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .box-header {
+      background-color: #0f3f88;
+      color: white;
+      padding: 10px;
+      border-top-left-radius: 5px;
+      border-top-right-radius: 5px;
+    }
+    .box-title {
+      margin-top: 0;
+    }
+    .box-body {
+      padding: 10px;
+    }
+    .blue-outline {
+      border-color: #0f3f88;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Fermenter 1</h2>
-    <!--<div id="chart-temperature"></div>-->
-    <div id="setpoint">Temperature: Waiting for updates...</div>
-    <div id="tc1TempC">Humidity: Waiting for updates...</div>
-    <div id="output">Output: Waiting for updates...</div>
-    <div id="nextPumpCycleTime">Next Pump Cycle Time: Waiting for updates...</div>
-    <div id="pumpStatus">Pump Status: Waiting for updates...</div>
-    <div id="fermStatus">Ferm Status: Waiting for updates...</div>
-    <form id="form1">
-      <div class="mb-3 row">
-        <label for="ferm1_Setpoint" class="col-sm-2 col-form-label">Setpoint</label>
-        <div class="col-sm-10">
-          <input type="number" step="0.01" min="0" max="40" id="ferm1_Setpoint" name="ferm1_Setpoint" class="form-control" oninput="setpointInputChanged(this.value)" onblur="setpointInputBlur()" style="width: 100px;">
+    
+    <!-- Fermenter 1 -->
+    <div class="box">
+      <div class="box-header">
+        <h3 class="box-title" align="center">Fermenter 1</h3>
+      </div>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Controls</h3>
+        </div>
+        <div class="box-body">
+          <form id="form1">
+            <div class="mb-3 row">
+              <label for="ferm1_Status" class="col-sm-4 col-form-label">Status</label>
+              <div class="col-sm-8">
+                <button type="button" id="ferm1_Status" name="ferm1_Status" class="btn btn-toggle-off btn-lg"
+                  onclick="toggleButton(1)">OFF</button>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label for="ferm1_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
+              <div class="col-sm-8">
+                <input type="number" step="0.01" min="0" max="40" id="ferm1_Setpoint" name="ferm1_Setpoint"
+                  class="form-control" oninput="setpointInputChanged(this.value, 1)" onblur="setpointInputBlur()">
+              </div>
+            </div>
+          </form>
+          <div id="form1-response"></div>
         </div>
       </div>
-      <div class="mb-3">
-        <label for="ferm1_Status" class="form-label">Status</label>
-        <button type="button" id="ferm1_Status" name="ferm1_Status" class="btn btn-secondary" onclick="toggleButton()">OFF</button>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Readings</h3>
+        </div>
+        <div class="box-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div id="setpoint1" class="mb-3">Temperature: Waiting for updates...</div>
+              <div id="tc1TempC1" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="output1" class="mb-3">Output: Waiting for updates...</div>
+              <div id="nextPumpCycleTime1" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
+              <div id="pumpStatus1" class="mb-3">Pump Status: Waiting for updates...</div>
+              <div id="fermStatus1" class="mb-3">Ferm Status: Waiting for updates...</div>
+            </div>
+          </div>
+        </div>
       </div>
-    </form>
-    <div id="form1-response" class="mt-3"></div>
+    </div>
+    
+    <!-- Fermenter 2 -->
+    <div class="box">
+      <div class="box-header">
+        <h3 class="box-title" align="center">Fermenter 2</h3>
+      </div>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Controls</h3>
+        </div>
+        <div class="box-body">
+          <form id="form2">
+            <div class="mb-3 row">
+              <label for="ferm2_Status" class="col-sm-4 col-form-label">Status</label>
+              <div class="col-sm-8">
+                <button type="button" id="ferm2_Status" name="ferm2_Status" class="btn btn-toggle-off btn-lg"
+                  onclick="toggleButton(2)">OFF</button>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label for="ferm2_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
+              <div class="col-sm-8">
+                <input type="number" step="0.01" min="0" max="40" id="ferm2_Setpoint" name="ferm2_Setpoint"
+                  class="form-control" oninput="setpointInputChanged(this.value, 2)" onblur="setpointInputBlur()">
+              </div>
+            </div>
+          </form>
+          <div id="form2-response"></div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Readings</h3>
+        </div>
+        <div class="box-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div id="setpoint2" class="mb-3">Temperature: Waiting for updates...</div>
+              <div id="tc1TempC2" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="output2" class="mb-3">Output: Waiting for updates...</div>
+              <div id="nextPumpCycleTime2" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
+              <div id="pumpStatus2" class="mb-3">Pump Status: Waiting for updates...</div>
+              <div id="fermStatus2" class="mb-3">Ferm Status: Waiting for updates...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Fermenter 3 -->
+    <div class="box">
+      <div class="box-header">
+        <h3 class="box-title" align="center">Fermenter 3</h3>
+      </div>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Controls</h3>
+        </div>
+        <div class="box-body">
+          <form id="form3">
+            <div class="mb-3 row">
+              <label for="ferm3_Status" class="col-sm-4 col-form-label">Status</label>
+              <div class="col-sm-8">
+                <button type="button" id="ferm3_Status" name="ferm3_Status" class="btn btn-toggle-off btn-lg"
+                  onclick="toggleButton(3)">OFF</button>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label for="ferm3_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
+              <div class="col-sm-8">
+                <input type="number" step="0.01" min="0" max="40" id="ferm3_Setpoint" name="ferm3_Setpoint"
+                  class="form-control" oninput="setpointInputChanged(this.value, 3)" onblur="setpointInputBlur()">
+              </div>
+            </div>
+          </form>
+          <div id="form3-response"></div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Readings</h3>
+        </div>
+        <div class="box-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div id="setpoint3" class="mb-3">Temperature: Waiting for updates...</div>
+              <div id="tc1TempC3" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="output3" class="mb-3">Output: Waiting for updates...</div>
+              <div id="nextPumpCycleTime3" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
+              <div id="pumpStatus3" class="mb-3">Pump Status: Waiting for updates...</div>
+              <div id="fermStatus3" class="mb-3">Ferm Status: Waiting for updates...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Fermenter 4 -->
+    <div class="box">
+      <div class="box-header">
+        <h3 class="box-title" align="center">Fermenter 4</h3>
+      </div>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Controls</h3>
+        </div>
+        <div class="box-body">
+          <form id="form4">
+            <div class="mb-3 row">
+              <label for="ferm4_Status" class="col-sm-4 col-form-label">Status</label>
+              <div class="col-sm-8">
+                <button type="button" id="ferm4_Status" name="ferm4_Status" class="btn btn-toggle-off btn-lg"
+                  onclick="toggleButton(4)">OFF</button>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label for="ferm4_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
+              <div class="col-sm-8">
+                <input type="number" step="0.01" min="0" max="40" id="ferm4_Setpoint" name="ferm4_Setpoint"
+                  class="form-control" oninput="setpointInputChanged(this.value, 4)" onblur="setpointInputBlur()">
+              </div>
+            </div>
+          </form>
+          <div id="form4-response"></div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="box-header">
+          <h3 class="box-title">Readings</h3>
+        </div>
+        <div class="box-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div id="setpoint4" class="mb-3">Temperature: Waiting for updates...</div>
+              <div id="tc1TempC4" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="output4" class="mb-3">Output: Waiting for updates...</div>
+              <div id="nextPumpCycleTime4" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
+              <div id="pumpStatus4" class="mb-3">Pump Status: Waiting for updates...</div>
+              <div id="fermStatus4" class="mb-3">Ferm Status: Waiting for updates...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+  
   <script>
-    updatingSetpoint = false;
+    // WebSocket connection for all fermenters
     const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
-
-    ws.onopen = function() {
+    
+    ws.onopen = function () {
       console.log('WebSocket connection established');
     };
-
-    ws.onmessage = function(event) {
+    
+    ws.onmessage = function (event) {
       const data = JSON.parse(event.data);
-      document.getElementById('setpoint').innerText = 'Setpoint: ' + data.setpoint.toFixed(2);
-      document.getElementById('tc1TempC').innerText = 'Temperature: ' + data.tc1TempC;
-      document.getElementById('output').innerText = 'Output: ' + data.output;
-      document.getElementById('nextPumpCycleTime').innerText = 'Next Pump Cycle Time: ' + data.nextPumpCycleTime;
-      document.getElementById('pumpStatus').innerText = 'Pump Status: ' + data.pumpStatus;
-      document.getElementById('fermStatus').innerText = 'Ferm Status: ' + data.fermStatus;
-
-      // Update form inputs with server values
-      if (!updatingSetpoint) {
-        document.getElementById('ferm1_Setpoint').value = data.setpoint.toFixed(2);
-      }
-      
-      var button = document.getElementById('ferm1_Status');
-      if (data.fermStatus === true) {
-        button.innerText = 'ON';
-        button.classList.remove('btn-secondary');
-        button.classList.add('btn-success');
-      } else {
-        button.innerText = 'OFF';
-        button.classList.remove('btn-success');
-        button.classList.add('btn-secondary');
-      }
+      // Update data for each fermenter
+      fermenterId = data['fermenterId'];
+      updateFermenterData(fermenterId, data);
     };
-
-    ws.onclose = function() {
+    
+    ws.onclose = function () {
       console.log('WebSocket connection closed');
     };
-
-    ws.onerror = function(error) {
+    
+    ws.onerror = function (error) {
       console.log('WebSocket error: ', error);
     };
+    
+    // Function to update data for each fermenter
+    function updateFermenterData(fermId, data) {
+      document.getElementById('setpoint' + fermId).innerText = 'Temperature: ' + data['setpoint'].toFixed(2);
+      document.getElementById('tc1TempC' + fermId).innerText = 'Temperature: ' + data['tc1TempC'];
+      document.getElementById('output' + fermId).innerText = 'Output: ' + data['output'];
+      document.getElementById('nextPumpCycleTime' + fermId).innerText = 'Next Pump Cycle Time: ' + data['nextPumpCycleTime'];
+      document.getElementById('pumpStatus' + fermId).innerText = 'Pump Status: ' + data['pumpStatus'];
+      document.getElementById('fermStatus' + fermId).innerText = 'Ferm Status: ' + data['fermStatus'];
+    
+      // Update form inputs with server values
+      if (!updatingSetpoint) {
+        document.getElementById('ferm' + fermId + '_Setpoint').value = data['setpoint'].toFixed(2);
+      }
 
+      var button = document.getElementById('ferm' + fermId + '_Status');
+      if (data['fermStatus'] === true) {
+        button.innerText = 'ON';
+        button.classList.remove('btn-toggle-off');
+        button.classList.add('btn-toggle-on');
+      } else {
+        button.innerText = 'OFF';
+        button.classList.remove('btn-toggle-on');
+        button.classList.add('btn-toggle-off');
+      }
+      
+    }
+    
+    // Fetch initial values from the server for all fermenters
+    document.addEventListener("DOMContentLoaded", function () {
+      fetchInitialValues(1);
+      fetchInitialValues(2);
+      fetchInitialValues(3);
+      fetchInitialValues(4);
+    });
+    
+    function fetchInitialValues(fermId) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/initial-values?id=" + fermId, true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          var data = JSON.parse(xhr.responseText);
+          document.getElementById('ferm' + fermId + '_Setpoint').value = data['ferm' + fermId + 'Setpoint'];
+          var button = document.getElementById('ferm' + fermId + '_Status');
+          if (data['ferm' + fermId + 'Status'] === 'ON') {
+            button.innerText = 'ON';
+            button.classList.remove('btn-toggle-off');
+            button.classList.add('btn-toggle-on');
+          } else {
+            button.innerText = 'OFF';
+            button.classList.remove('btn-toggle-on');
+            button.classList.add('btn-toggle-off');
+          }
+        }
+      };
+      xhr.send();
+    }
+    
+    // Function to send data for each fermenter
     function sendData(inputName, inputValue) {
-      if (inputName === 'ferm1_Setpoint' && (inputValue < 0 || inputValue > 40)) {
+      var fermId = inputName.slice(-1);
+      if (inputName.startsWith('ferm') && (inputValue < 0 || inputValue > 40)) {
         alert('Setpoint must be between 0 and 40');
         return;
       }
@@ -116,67 +354,42 @@
       var url = "/post";
       var data = {};
       data[inputName] = inputValue;
-
+    
       xhr.open("POST", url, true);
       xhr.setRequestHeader("Content-Type", "application/json");
-
-      xhr.onreadystatechange = function() {
+    
+      xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
           document.getElementById(inputName + "-response").innerHTML = xhr.responseText;
         }
       };
       xhr.send(JSON.stringify(data));
     }
-
-    function toggleButton() {
-      var button = document.getElementById("ferm1_Status");
+    
+    function toggleButton(fermId) {
+      var button = document.getElementById("ferm" + fermId + "_Status");
       if (button.innerText === "OFF") {
         button.innerText = "ON";
-        button.classList.remove("btn-secondary");
-        button.classList.add("btn-success");
-        sendData("ferm1_Status", "ON");
+        button.classList.remove("btn-toggle-off");
+        button.classList.add("btn-toggle-on");
+        sendData("ferm" + fermId + "_Status", "ON");
       } else {
         button.innerText = "OFF";
-        button.classList.remove("btn-success");
-        button.classList.add("btn-secondary");
-        sendData("ferm1_Status", "OFF");
+        button.classList.remove("btn-toggle-on");
+        button.classList.add("btn-toggle-off");
+        sendData("ferm" + fermId + "_Status", "OFF");
       }
     }
-
-    // Fetch initial values from the server
-    function fetchInitialValues() {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "/initial-values", true);
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-          var data = JSON.parse(xhr.responseText);
-          document.getElementById('ferm1_Setpoint').value = data.ferm1Setpoint;
-          var button = document.getElementById('ferm1_Status');
-          if (data.ferm1Status === 'ON') {
-            button.innerText = 'ON';
-            button.classList.remove('btn-secondary');
-            button.classList.add('btn-success');
-          } else {
-            button.innerText = 'OFF';
-            button.classList.remove('btn-success');
-            button.classList.add('btn-secondary');
-          }
-        }
-      };
-      xhr.send();
+    
+    var updatingSetpoint = false;
+    
+    function setpointInputChanged(value, fermId) {
+      updatingSetpoint = true;
+      sendData("ferm" + fermId + "_Setpoint", value);
     }
-
-    document.addEventListener("DOMContentLoaded", function() {
-      fetchInitialValues();
-    });
-
-    function setpointInputChanged(value) {
-      updatingSetpoint = true; // User is actively editing setpoint
-      sendData('ferm1_Setpoint', value)
-    }
-
+    
     function setpointInputBlur() {
-      updatingSetpoint = false; // User has finished editing setpoint
+      updatingSetpoint = false;
     }
   </script>
 </body>

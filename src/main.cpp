@@ -45,11 +45,11 @@
 #define EEPROM_ADDR_FERM3STATUS 18
 #define EEPROM_ADDR_FERM4STATUS 19
 
-//Test pour recevoir un paramètre.
-const char* PARAM_INPUT_1 = "input1";
+// Test pour recevoir un paramètre.
+const char *PARAM_INPUT_1 = "input1";
 
-//const char* ssid = "Michel";
-//const char* password = "Mikego20";
+// const char* ssid = "Michel";
+// const char* password = "Mikego20";
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
@@ -123,6 +123,7 @@ unsigned long currentMillis = 0;
 
 struct FermenterData
 {
+  int fermenterId;
   float setpoint;
   float tc1TempC;
   double output;
@@ -131,15 +132,17 @@ struct FermenterData
   bool fermStatus;
 
   // Method to serialize to JSON
-  String toJson() {
+  String toJson()
+  {
     StaticJsonDocument<200> doc; // Adjust the size as per your data complexity
+    doc["fermenterId"] = fermenterId;
     doc["setpoint"] = setpoint;
     doc["tc1TempC"] = tc1TempC;
     doc["output"] = output;
     doc["nextPumpCycleTime"] = nextPumpCycleTime;
     doc["pumpStatus"] = pumpStatus;
     doc["fermStatus"] = fermStatus;
-    
+
     String jsonOutput;
     serializeJson(doc, jsonOutput);
     return jsonOutput;
@@ -169,34 +172,77 @@ float ferm4AvgTemp = 20;
 //*********** Create a WebSocket server object on port 81 *************
 WebSocketsServer webSocket = WebSocketsServer(3333);
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-  switch(type) {
-    case WStype_DISCONNECTED:
-      Serial.printf("[%u] Disconnected!\n", num);
-      break;
-    case WStype_CONNECTED:
-      {
-        IPAddress ip = webSocket.remoteIP(num);
-        Serial.printf("[%u] Connection from ", num);
-        Serial.println(ip.toString());
-        
-        // Send a welcome message to the client
-        StaticJsonDocument<200> doc;
-        doc["message"] = "Welcome to the WebSocket server!";
-        String json;
-        serializeJson(doc, json);
-        webSocket.sendTXT(num, json);
-      }
-      break;
-    case WStype_TEXT:
-      Serial.printf("[%u] Received text: %s\n", num, payload);
-      
-      // Echo the received message back to the client
-      webSocket.sendTXT(num, payload);
-      break;
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+{
+  switch (type)
+  {
+  case WStype_DISCONNECTED:
+    Serial.printf("[%u] Disconnected!\n", num);
+    break;
+  case WStype_CONNECTED:
+  {
+    IPAddress ip = webSocket.remoteIP(num);
+    Serial.printf("[%u] Connection from ", num);
+    Serial.println(ip.toString());
+
+    // Send a welcome message to the client
+    StaticJsonDocument<200> doc;
+    doc["message"] = "Welcome to the WebSocket server!";
+    String json;
+    serializeJson(doc, json);
+    webSocket.sendTXT(num, json);
+  }
+  break;
+  case WStype_TEXT:
+    Serial.printf("[%u] Received text: %s\n", num, payload);
+
+    // Echo the received message back to the client
+    webSocket.sendTXT(num, payload);
+    break;
   }
 }
 //*********** END WebSocket server object on port 81 ******************
+
+void updateStatus(const char *key, const char *str_value, bool &status, double &output, int &pid_i, int eepromAddress)
+{
+  if (str_value == NULL)
+  {
+    printf("Error: str_value is NULL\n");
+    return;
+  }
+
+  if (strcmp(str_value, "ON") == 0)
+  {
+    status = true;
+  }
+  else
+  {
+    status = false;
+    output = 0;
+    pid_i = 0;
+  }
+
+  EEPROM.put(eepromAddress, status);
+}
+
+void updateSetpoint(const char *key, const char *str_value, double &setpoint, int eepromAddress)
+{
+  if (str_value == NULL)
+  {
+    printf("Error: str_value is NULL\n");
+    return;
+  }
+
+  char *end;
+  double double_value = strtod(str_value, &end);
+  if (*end != '\0')
+  {
+    printf("Conversion error, non-convertible part: %s\n", end);
+  }
+
+  EEPROM.put(eepromAddress, double_value);
+  EEPROM.get(eepromAddress, setpoint);
+}
 
 void setup()
 {
@@ -206,13 +252,17 @@ void setup()
   Serial.begin(115200);
   Serial.println(" SETUP ");
   //************************ END SERIAL COMM SETUP ********************
+  ferm1Data.fermenterId = 1;
+  ferm2Data.fermenterId = 2;
+  ferm3Data.fermenterId = 3;
+  ferm4Data.fermenterId = 4;
 
   //************************ WIFI SETUP *******************************
   AsyncWiFiManager wifiManager(&server, &dns);
   wifiManager.autoConnect("AutoConnectAP");
-  //Print ESP32 Local IP Address
+  // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
-  
+
   /*
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -224,61 +274,60 @@ void setup()
   //************************ END WIFI SETUP ***************************
 
   //************************ START LITTLEFS SETUP *********************
-  if (!LittleFS.begin ()) {
-    Serial.println ("An Error has occurred while mounting LittleFS");
+  if (!LittleFS.begin())
+  {
+    Serial.println("An Error has occurred while mounting LittleFS");
     return;
   }
 
-  Dir dir = LittleFS.openDir ("");
-    while (dir.next ()) {
-      Serial.println ("Here the files:\r");
-      Serial.println (dir.fileName ());
-      Serial.println (dir.fileSize ());
-    }
+  Dir dir = LittleFS.openDir("");
+  while (dir.next())
+  {
+    Serial.println("Here the files:\r");
+    Serial.println(dir.fileName());
+    Serial.println(dir.fileSize());
+  }
   //************************ END LITTLEFS SETUP ***********************
 
   //************************ START Route for root / web page *********/
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(LittleFS, "/index.html");
-  });
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(LittleFS, "/index.html"); });
 
-  server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     char str[20];
     sprintf(str, "%f", ferm1Data.tc1TempC);
     String temp1 = String(str);
-    request->send_P(200, "text/plain", temp1.c_str());
-  });
+    request->send_P(200, "text/plain", temp1.c_str()); });
   //************************ END Route for root / web page ************
 
   // Send a GET request to <ESP_IP>/get?input1=<inputMessage> *********
-  server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
-    String inputMessage;
-    String inputParam;
-    
-    // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
-    if (request->hasParam(PARAM_INPUT_1)) {
-      inputMessage = request->getParam(PARAM_INPUT_1)->value();
-      inputParam = PARAM_INPUT_1;
-    }
-    
-    Serial.println(inputMessage);
-    
-    request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" 
-                                     + inputParam + ") with value: " + inputMessage +
-                                     "<br><a href=\"/\">Return to Home Page</a>");
-    
-  });
+  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              String inputMessage;
+              String inputParam;
 
-  server.on("/ferm1data", HTTP_GET, [](AsyncWebServerRequest *request) {
+              // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
+              if (request->hasParam(PARAM_INPUT_1))
+              {
+                inputMessage = request->getParam(PARAM_INPUT_1)->value();
+                inputParam = PARAM_INPUT_1;
+              }
+
+              request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" + inputParam + ") with value: " + inputMessage + "<br><a href=\"/\">Return to Home Page</a>");
+            });
+
+  server.on("/ferm1data", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
   String json = "{\"setpoint\": " + String(ferm1Data.setpoint, 1) + 
                 ", \"tc1TempC\": " + String(ferm1Data.tc1TempC, 1) +
                 ", \"output\": " + String(ferm1Data.output) +
                 ", \"nextPumpCycleTime\": " + String(ferm1Data.nextPumpCycleTime) +
                 ", \"pumpStatus\": " + String(ferm1Data.pumpStatus) + "}";
-  request->send(200, "application/json", json);
-});
+  request->send(200, "application/json", json); });
 
-server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     StaticJsonDocument<512> doc;
     DeserializationError error = deserializeJson(doc, data);
 
@@ -290,55 +339,29 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
     }
 
     for (JsonPair kv : doc.as<JsonObject>()) {
-      const char* key_value = kv.key().c_str();
-      const char* str_value = kv.value().as<const char*>();
-      
-      Serial.print(key_value);
-      Serial.print(" : ");
-      Serial.print(str_value);
-      Serial.print("\n");
+    const char* key_value = kv.key().c_str();
+    const char* str_value = kv.value().as<const char*>();
 
-      if(strcmp(key_value, "ferm1_Status") == 0) {
-        Serial.print("Dans ferm1_status\n");
-        if (str_value == NULL) {
-            printf("Error: str_value is NULL\n");
-        }
-        if (strcmp(str_value, "ON") == 0) {
-          Serial.print("Mettre le ferm1 a ON.\n");
-          ferm1_Status = true;
-        }
-        else {
-          ferm1_Status = false;
-          ferm1_Output = 0;
-          ferm1_pid_i = 0;
-        }
-        EEPROM.put(EEPROM_ADDR_FERM2STATUS, ferm1_Status);
-        EEPROM.commit();
-      }
-
-    if(strcmp(key_value, "ferm1_Setpoint") == 0) {
-        
-        if (str_value == NULL) {
-            printf("Error: str_value is NULL\n");
-        }
-        // Convert the string to double
-        char* end;
-        double double_value = strtod(str_value, &end);
-        // Check if the entire string was converted
-        if (*end != '\0') {
-            printf("Conversion error, non-convertible part: %s\n", end);
-        }
-        Serial.print("\nBel et bien le ferm1 setpoint\n");
-        printf("The double value is: %s\n", str_value);
-
-        EEPROM.put(EEPROM_ADDR_SETPOINT1, double_value);
-        EEPROM.commit();
-        EEPROM.get(EEPROM_ADDR_SETPOINT1, ferm1_Setpoint);
+      if (strcmp(key_value, "ferm1_Status") == 0) {
+          updateStatus(key_value, str_value, ferm1_Status, ferm1_Output, ferm1_pid_i, EEPROM_ADDR_FERM1STATUS);
+      } else if (strcmp(key_value, "ferm1_Setpoint") == 0) {
+          updateSetpoint(key_value, str_value, ferm1_Setpoint, EEPROM_ADDR_SETPOINT1);
+      } else if (strcmp(key_value, "ferm2_Status") == 0) {
+          updateStatus(key_value, str_value, ferm2_Status, ferm2_Output, ferm2_pid_i, EEPROM_ADDR_FERM2STATUS);
+      } else if (strcmp(key_value, "ferm2_Setpoint") == 0) {
+          updateSetpoint(key_value, str_value, ferm2_Setpoint, EEPROM_ADDR_SETPOINT2);
+      } else if (strcmp(key_value, "ferm3_Status") == 0) {
+          updateStatus(key_value, str_value, ferm3_Status, ferm3_Output, ferm3_pid_i, EEPROM_ADDR_FERM3STATUS);
+      } else if (strcmp(key_value, "ferm3_Setpoint") == 0) {
+          updateSetpoint(key_value, str_value, ferm3_Setpoint, EEPROM_ADDR_SETPOINT3);
+      } else if (strcmp(key_value, "ferm4_Status") == 0) {
+          updateStatus(key_value, str_value, ferm4_Status, ferm4_Output, ferm4_pid_i, EEPROM_ADDR_FERM4STATUS);
+      } else if (strcmp(key_value, "ferm4_Setpoint") == 0) {
+          updateSetpoint(key_value, str_value, ferm4_Setpoint, EEPROM_ADDR_SETPOINT4);
       }
     }
 
-    request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"JSON data received\"}");
-  });
+    request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"JSON data received\"}"); });
 
   // ******************************************************************
   server.begin();
@@ -350,7 +373,6 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
   ferm4_windowStartTime = millis();
 
   // initialize the variables we're linked to
-
 
   // Pour modifier manuellement le status et le setpoint des fermenteurs
   // dans le cas ou le RPI ne fonctionne pas.
@@ -379,8 +401,6 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
 
   // Fin de la configuration manuelle.
   EEPROM.get(EEPROM_ADDR_SETPOINT1, ferm1_Setpoint);
-  Serial.print("ferm1_Setpoint = ");
-  Serial.print(ferm1_Setpoint);
   EEPROM.get(EEPROM_ADDR_SETPOINT2, ferm2_Setpoint);
   EEPROM.get(EEPROM_ADDR_SETPOINT3, ferm3_Setpoint);
   EEPROM.get(EEPROM_ADDR_SETPOINT4, ferm4_Setpoint);
@@ -403,7 +423,7 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
   ferm4_pid.SetMode(AUTOMATIC);
 
   //************************ END PID SETUP*****************************
-  Serial.println(" SETUP_1 ");
+
   //************************ RELAY SETUP ******************************
   // We need to configure the pinMode to Ferm1_Input_PULLUP first
   // It avoids having a HIGH state when configuring the pinMode to Ferm1_Output.
@@ -430,84 +450,108 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
   tc_read_last_millis = millis();
   read_tc = false;
 
-////************************ Start the WebSocket server *******************
+  ////************************ Start the WebSocket server *******************
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
   Serial.println("WebSocket server started.");
 
   //************************ END TEMPERATURE READING SETUP ****************
-  Serial.println(" ENDSETUP ");
 }
 
 // Function to update next pump cycle time
-void updateNextPumpCycleTime() {
-  if (ferm1_Status == true) {
+void updateNextPumpCycleTime()
+{
+  if (ferm1_Status == true)
+  {
     ferm1Data.nextPumpCycleTime = ((WindowSize * 1000 - (millis() - ferm1_windowStartTime)) + 500) / 1000;
-  } else {
+  }
+  else
+  {
     ferm1Data.nextPumpCycleTime = 0;
     ferm1Data.output = 0;
   }
 
-  if (ferm2_Status == true) {
+  if (ferm2_Status == true)
+  {
     ferm2Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm2_windowStartTime)) / 1000;
-  } else {
+  }
+  else
+  {
     ferm2Data.nextPumpCycleTime = 0;
     ferm2Data.output = 0;
   }
 
-  if (ferm3_Status == true) {
+  if (ferm3_Status == true)
+  {
     ferm3Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm3_windowStartTime)) / 1000;
-  } else {
+  }
+  else
+  {
     ferm3Data.nextPumpCycleTime = 0;
     ferm3Data.output = 0;
   }
 
-  if (ferm4_Status == true) {
+  if (ferm4_Status == true)
+  {
     ferm4Data.nextPumpCycleTime = (WindowSize * 1000 - (millis() - ferm4_windowStartTime)) / 1000;
-  } else {
+  }
+  else
+  {
     ferm4Data.nextPumpCycleTime = 0;
     ferm4Data.output = 0;
   }
 }
 
-
 // Function to update output
-void updateOutput(double output, int relayPin, unsigned long &windowStartTime, FermenterData &data) {
-  if (millis() - windowStartTime > WindowSize * 1000) {
+void updateOutput(double output, int relayPin, unsigned long &windowStartTime, FermenterData &data)
+{
+  if (millis() - windowStartTime > WindowSize * 1000)
+  {
     windowStartTime += WindowSize * 1000;
   }
-  if (output * 1000 < millis() - windowStartTime) {
+  if (output * 1000 < millis() - windowStartTime)
+  {
     digitalWrite(relayPin, HIGH);
     data.pumpStatus = false;
-  } else {
+  }
+  else
+  {
     digitalWrite(relayPin, LOW);
     data.pumpStatus = true;
   }
 }
 
 // Function to handle the PID loop for a fermenter
-void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pid_i, int pid_T, PID &pid, MovingAveragePlus<float> &movAvg, FermenterData &data, int relay, unsigned long &windowStartTime) {
-  if (status) {
-    if (data.tc1TempC != -127) {
+void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pid_i, int pid_T, PID &pid, MovingAveragePlus<float> &movAvg, FermenterData &data, int relay, unsigned long &windowStartTime)
+{
+  if (status)
+  {
+    if (data.tc1TempC != -127)
+    {
       float avgTemp = movAvg.push(data.tc1TempC).get();
       input = avgTemp;
-      Serial.print(pid_i);
       // Compute PID output only every 30 seconds
-      if (pid_i + 1 >= pid_T) {
+      if (pid_i + 1 >= pid_T)
+      {
         pid.Compute();
         pid_i = 0;
-        if (output < 2) {
+        if (output < 2)
+        {
           output = 0;
         }
-      } else {
+      }
+      else
+      {
         pid_i++;
       }
 
       // Turn the output pin on/off based on PID output
       updateOutput(output, relay, windowStartTime, data);
     }
-  } else {
+  }
+  else
+  {
     windowStartTime = millis();
   }
 }
@@ -515,19 +559,18 @@ void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pi
 void loop()
 {
 
-  
   currentMillis = millis();
 
   while ((currentMillis - previousMillis) < interval)
   {
     // Execute all other code between two temperature measurement.
     // Put the radio in listening mode, and verify for new ferm1_Setpoint.
-    
+
     // Handle WebSocket events
     webSocket.loop();
-    
+
     delay(10);
-    
+
     currentMillis = millis();
 
     // Read TC every tc_read_interval_millis = X ms
@@ -556,7 +599,7 @@ void loop()
     sensors.requestTemperatures();
   }
 
-    // FERMENTER 1 PID LOOP
+  // FERMENTER 1 PID LOOP
   handleFermenterPIDLoop(ferm1_Status, ferm1_Input, ferm1_Output, ferm1_pid_i, pid_T, ferm1_pid, ferm1MovAvg, ferm1Data, RELAY1, ferm1_windowStartTime);
 
   // FERMENTER 2 PID LOOP
@@ -583,6 +626,15 @@ void loop()
   String json = ferm1Data.toJson();
   webSocket.broadcastTXT(json);
 
+  json = ferm2Data.toJson();
+  webSocket.broadcastTXT(json);
+
+  json = ferm3Data.toJson();
+  webSocket.broadcastTXT(json);
+
+  json = ferm4Data.toJson();
+  webSocket.broadcastTXT(json);
+
   // First, stop listening so we can talk.
   // radio.stopListening();
 
@@ -595,10 +647,8 @@ void loop()
 
   String message = "****************************\r\n" + message1 + "\r\n" + message2 + "\r\n" + message3 + "\r\n" + message4;
   Serial.println(message);
-*/ 
-
+*/
 }
-
 
 /*
 Explanation
