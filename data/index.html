@@ -43,95 +43,30 @@
 </head>
 <body>
   <div class="container">
-    <h2>Temp&#233;rature Garage Michel</h2>
-    <div id="chart-temperature"></div>
-    <div class="mb-3">
-      <label for="value" class="form-label">Current Value</label>
-      <input id="value" class="form-control" type="text" readonly>
-    </div>
-    <form action="/get" target="hidden-form" class="mb-3">
-      <div class="mb-3">
-        <label for="inputFloat" class="form-label">Input Float (current value %inputFloat%)</label>
-        <input type="number" name="inputFloat" id="inputFloat" class="form-control">
-      </div>
-      <button type="submit" class="btn btn-primary" onclick="submitMessage()">Submit</button>
-    </form>
-    <h1>Real-time Updates from NodeMCU</h1>
+    <h2>Fermenter 1</h2>
+    <!--<div id="chart-temperature"></div>-->
     <div id="setpoint">Temperature: Waiting for updates...</div>
     <div id="tc1TempC">Humidity: Waiting for updates...</div>
     <div id="output">Output: Waiting for updates...</div>
     <div id="nextPumpCycleTime">Next Pump Cycle Time: Waiting for updates...</div>
     <div id="pumpStatus">Pump Status: Waiting for updates...</div>
     <div id="fermStatus">Ferm Status: Waiting for updates...</div>
-    <h1>Send Data to ESP</h1>
-    <h2>Form 1</h2>
-    <form id="form1" onsubmit="event.preventDefault(); sendData('form1');">
-      <div class="mb-3">
-        <label for="ferm1-Setpoint" class="form-label">Setpoint</label>
-        <input type="number" step="0.01" id="ferm1-Setpoint" name="ferm1-Setpoint" class="form-control">
+    <form id="form1">
+      <div class="mb-3 row">
+        <label for="ferm1_Setpoint" class="col-sm-2 col-form-label">Setpoint</label>
+        <div class="col-sm-10">
+          <input type="number" step="0.01" min="0" max="40" id="ferm1_Setpoint" name="ferm1_Setpoint" class="form-control" oninput="setpointInputChanged(this.value)" onblur="setpointInputBlur()" style="width: 100px;">
+        </div>
       </div>
       <div class="mb-3">
-        <label for="input2" class="form-label">Input 2</label>
-        <input type="text" id="input2" name="input2" class="form-control">
+        <label for="ferm1_Status" class="form-label">Status</label>
+        <button type="button" id="ferm1_Status" name="ferm1_Status" class="btn btn-secondary" onclick="toggleButton()">OFF</button>
       </div>
-      <button type="submit" class="btn btn-primary">Send</button>
     </form>
     <div id="form1-response" class="mt-3"></div>
-    <h2>Form 2</h2>
-    <form id="form2" onsubmit="event.preventDefault(); sendData('form2');">
-      <div class="mb-3">
-        <label for="input3" class="form-label">Input 3</label>
-        <input type="text" id="input3" name="input3" class="form-control">
-      </div>
-      <div class="mb-3">
-        <label for="input4" class="form-label">Input 4</label>
-        <input type="text" id="input4" name="input4" class="form-control">
-      </div>
-      <button type="submit" class="btn btn-primary">Send</button>
-    </form>
-    <div id="form2-response" class="mt-3"></div>
   </div>
   <script>
-    var chartT = new Highcharts.Chart({
-      chart: { renderTo: 'chart-temperature' },
-      title: { text: 'Temp&#233;rature' },
-      series: [{
-        showInLegend: false,
-        data: []
-      }],
-      plotOptions: {
-        line: {
-          animation: false,
-          dataLabels: { enabled: false }
-        },
-        series: { color: '#059e8a' }
-      },
-      xAxis: { type: 'datetime', dateTimeLabelFormats: { second: '%H:%M:%S' } },
-      time: { useUTC: false },
-      yAxis: { title: { text: 'Temperature (Celsius)' } },
-      credits: { enabled: false }
-    });
-
-    chartT.yAxis[0].setExtremes(8, 30);
-
-    setInterval(function() {
-      var xhttp = new XMLHttpRequest();
-      xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          var x = (new Date()).getTime(),
-              y = parseFloat(this.responseText);
-          if (chartT.series[0].data.length > 600) {
-            chartT.series[0].addPoint([x, y], true, true, true);
-          } else {
-            chartT.series[0].addPoint([x, y], true, false, true);
-          }
-          document.getElementById("value").value = y.toFixed(2);
-        }
-      };
-      xhttp.open("GET", "/temperature", true);
-      xhttp.send();
-    }, 1000);
-
+    updatingSetpoint = false;
     const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
 
     ws.onopen = function() {
@@ -141,11 +76,27 @@
     ws.onmessage = function(event) {
       const data = JSON.parse(event.data);
       document.getElementById('setpoint').innerText = 'Setpoint: ' + data.setpoint.toFixed(2);
-      document.getElementById('tc1TempC').innerText = 'Temperature: ' + data.tc1TempC.toFixed(2);
+      document.getElementById('tc1TempC').innerText = 'Temperature: ' + data.tc1TempC;
       document.getElementById('output').innerText = 'Output: ' + data.output;
       document.getElementById('nextPumpCycleTime').innerText = 'Next Pump Cycle Time: ' + data.nextPumpCycleTime;
       document.getElementById('pumpStatus').innerText = 'Pump Status: ' + data.pumpStatus;
       document.getElementById('fermStatus').innerText = 'Ferm Status: ' + data.fermStatus;
+
+      // Update form inputs with server values
+      if (!updatingSetpoint) {
+        document.getElementById('ferm1_Setpoint').value = data.setpoint.toFixed(2);
+      }
+      
+      var button = document.getElementById('ferm1_Status');
+      if (data.fermStatus === true) {
+        button.innerText = 'ON';
+        button.classList.remove('btn-secondary');
+        button.classList.add('btn-success');
+      } else {
+        button.innerText = 'OFF';
+        button.classList.remove('btn-success');
+        button.classList.add('btn-secondary');
+      }
     };
 
     ws.onclose = function() {
@@ -156,26 +107,76 @@
       console.log('WebSocket error: ', error);
     };
 
-    function sendData(formId) {
+    function sendData(inputName, inputValue) {
+      if (inputName === 'ferm1_Setpoint' && (inputValue < 0 || inputValue > 40)) {
+        alert('Setpoint must be between 0 and 40');
+        return;
+      }
       var xhr = new XMLHttpRequest();
       var url = "/post";
-      var form = document.getElementById(formId);
       var data = {};
-
-      var inputs = form.getElementsByTagName('input');
-      for (var i = 0; i < inputs.length; i++) {
-        data[inputs[i].name] = inputs[i].value;
-      }
+      data[inputName] = inputValue;
 
       xhr.open("POST", url, true);
       xhr.setRequestHeader("Content-Type", "application/json");
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState == 4 && xhr.status == 200) {
-          document.getElementById(formId + "-response").innerHTML = xhr.responseText;
+          document.getElementById(inputName + "-response").innerHTML = xhr.responseText;
         }
       };
       xhr.send(JSON.stringify(data));
+    }
+
+    function toggleButton() {
+      var button = document.getElementById("ferm1_Status");
+      if (button.innerText === "OFF") {
+        button.innerText = "ON";
+        button.classList.remove("btn-secondary");
+        button.classList.add("btn-success");
+        sendData("ferm1_Status", "ON");
+      } else {
+        button.innerText = "OFF";
+        button.classList.remove("btn-success");
+        button.classList.add("btn-secondary");
+        sendData("ferm1_Status", "OFF");
+      }
+    }
+
+    // Fetch initial values from the server
+    function fetchInitialValues() {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/initial-values", true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          var data = JSON.parse(xhr.responseText);
+          document.getElementById('ferm1_Setpoint').value = data.ferm1Setpoint;
+          var button = document.getElementById('ferm1_Status');
+          if (data.ferm1Status === 'ON') {
+            button.innerText = 'ON';
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-success');
+          } else {
+            button.innerText = 'OFF';
+            button.classList.remove('btn-success');
+            button.classList.add('btn-secondary');
+          }
+        }
+      };
+      xhr.send();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      fetchInitialValues();
+    });
+
+    function setpointInputChanged(value) {
+      updatingSetpoint = true; // User is actively editing setpoint
+      sendData('ferm1_Setpoint', value)
+    }
+
+    function setpointInputBlur() {
+      updatingSetpoint = false; // User has finished editing setpoint
     }
   </script>
 </body>

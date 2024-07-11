@@ -292,8 +292,31 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
     for (JsonPair kv : doc.as<JsonObject>()) {
       const char* key_value = kv.key().c_str();
       const char* str_value = kv.value().as<const char*>();
+      
+      Serial.print(key_value);
+      Serial.print(" : ");
+      Serial.print(str_value);
+      Serial.print("\n");
 
-      if(strcmp(key_value, "ferm1-Setpoint") == 0) {
+      if(strcmp(key_value, "ferm1_Status") == 0) {
+        Serial.print("Dans ferm1_status\n");
+        if (str_value == NULL) {
+            printf("Error: str_value is NULL\n");
+        }
+        if (strcmp(str_value, "ON") == 0) {
+          Serial.print("Mettre le ferm1 a ON.\n");
+          ferm1_Status = true;
+        }
+        else {
+          ferm1_Status = false;
+          ferm1_Output = 0;
+          ferm1_pid_i = 0;
+        }
+        EEPROM.put(EEPROM_ADDR_FERM2STATUS, ferm1_Status);
+        EEPROM.commit();
+      }
+
+    if(strcmp(key_value, "ferm1_Setpoint") == 0) {
         
         if (str_value == NULL) {
             printf("Error: str_value is NULL\n");
@@ -469,7 +492,7 @@ void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pi
     if (data.tc1TempC != -127) {
       float avgTemp = movAvg.push(data.tc1TempC).get();
       input = avgTemp;
-
+      Serial.print(pid_i);
       // Compute PID output only every 30 seconds
       if (pid_i + 1 >= pid_T) {
         pid.Compute();
