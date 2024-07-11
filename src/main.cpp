@@ -17,7 +17,7 @@
 #include <MovingAveragePlus.h>
 #include <SPI.h>
 #include <PID_v1.h>
-#include "EEPROM.h"
+#include "ESP_EEPROM.h"
 #include <ESP8266WiFi.h>
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
@@ -47,7 +47,6 @@
 
 //Test pour recevoir un paramètre.
 const char* PARAM_INPUT_1 = "input1";
-
 
 //const char* ssid = "Michel";
 //const char* password = "Mikego20";
@@ -148,20 +147,6 @@ struct FermenterData
 };
 FermenterData ferm1Data, ferm2Data, ferm3Data, ferm4Data;
 
-struct ControlData
-{
-  double ferm1_setpoint;
-  double ferm2_setpoint;
-  double ferm3_setpoint;
-  double ferm4_setpoint;
-  bool ferm1_status;
-  bool ferm2_status;
-  bool ferm3_status;
-  bool ferm4_status;
-};
-
-ControlData controlData;
-
 //*********** END COMMUNICATION DATA STRUCTURE DEFINITION *************
 
 //*********** FIRMWARE VARIABLES DEFINITIONS **************************
@@ -215,6 +200,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 void setup()
 {
+  EEPROM.begin(19);
+
   //************************ SERIAL COMM SETUP ************************
   Serial.begin(115200);
   Serial.println(" SETUP ");
@@ -303,9 +290,28 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
     }
 
     for (JsonPair kv : doc.as<JsonObject>()) {
-      Serial.print(kv.key().c_str());
-      Serial.print(": ");
-      Serial.println(kv.value().as<const char*>());
+      const char* key_value = kv.key().c_str();
+      const char* str_value = kv.value().as<const char*>();
+
+      if(strcmp(key_value, "ferm1-Setpoint") == 0) {
+        
+        if (str_value == NULL) {
+            printf("Error: str_value is NULL\n");
+        }
+        // Convert the string to double
+        char* end;
+        double double_value = strtod(str_value, &end);
+        // Check if the entire string was converted
+        if (*end != '\0') {
+            printf("Conversion error, non-convertible part: %s\n", end);
+        }
+        Serial.print("\nBel et bien le ferm1 setpoint\n");
+        printf("The double value is: %s\n", str_value);
+
+        EEPROM.put(EEPROM_ADDR_SETPOINT1, double_value);
+        EEPROM.commit();
+        EEPROM.get(EEPROM_ADDR_SETPOINT1, ferm1_Setpoint);
+      }
     }
 
     request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"JSON data received\"}");
@@ -322,8 +328,10 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
 
   // initialize the variables we're linked to
 
+
   // Pour modifier manuellement le status et le setpoint des fermenteurs
   // dans le cas ou le RPI ne fonctionne pas.
+  /*
   ferm1_Status = true;
   ferm2_Status = true;
   ferm3_Status = true;
@@ -334,6 +342,7 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
   ferm3_Setpoint = 20;
   ferm4_Setpoint = 20;
 
+
   EEPROM.put(EEPROM_ADDR_SETPOINT1, ferm1_Setpoint);
   EEPROM.put(EEPROM_ADDR_SETPOINT2, ferm2_Setpoint);
   EEPROM.put(EEPROM_ADDR_SETPOINT3, ferm3_Setpoint);
@@ -343,10 +352,12 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
   EEPROM.put(EEPROM_ADDR_FERM2STATUS, ferm2_Status);
   EEPROM.put(EEPROM_ADDR_FERM3STATUS, ferm3_Status);
   EEPROM.put(EEPROM_ADDR_FERM4STATUS, ferm4_Status);
+  */
 
   // Fin de la configuration manuelle.
-
   EEPROM.get(EEPROM_ADDR_SETPOINT1, ferm1_Setpoint);
+  Serial.print("ferm1_Setpoint = ");
+  Serial.print(ferm1_Setpoint);
   EEPROM.get(EEPROM_ADDR_SETPOINT2, ferm2_Setpoint);
   EEPROM.get(EEPROM_ADDR_SETPOINT3, ferm3_Setpoint);
   EEPROM.get(EEPROM_ADDR_SETPOINT4, ferm4_Setpoint);
@@ -386,7 +397,7 @@ server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](As
 
   pinMode(RELAY4, INPUT_PULLUP);
   pinMode(RELAY4, OUTPUT);
-  //************************ END RELAY SETUP ******************************
+  //************************ END RELAY SETUP ******************************kv.key().c_str()
 
   //************************ TEMPERATURE READING SETUP ********************
   // Make asynchronous call to requestTempeature()
