@@ -37,13 +37,13 @@
 // These are the mandatory persistent values
 // If the controller reboot, it will start from the last known state
 #define EEPROM_ADDR_SETPOINT1 0
-#define EEPROM_ADDR_SETPOINT2 4
-#define EEPROM_ADDR_SETPOINT3 8
-#define EEPROM_ADDR_SETPOINT4 12
-#define EEPROM_ADDR_FERM1STATUS 16
-#define EEPROM_ADDR_FERM2STATUS 17
-#define EEPROM_ADDR_FERM3STATUS 18
-#define EEPROM_ADDR_FERM4STATUS 19
+#define EEPROM_ADDR_SETPOINT2 8
+#define EEPROM_ADDR_SETPOINT3 16
+#define EEPROM_ADDR_SETPOINT4 24
+#define EEPROM_ADDR_FERM1STATUS 32
+#define EEPROM_ADDR_FERM2STATUS 34
+#define EEPROM_ADDR_FERM3STATUS 36
+#define EEPROM_ADDR_FERM4STATUS 38
 
 // Test pour recevoir un paramètre.
 const char *PARAM_INPUT_1 = "input1";
@@ -223,6 +223,7 @@ void updateStatus(const char *key, const char *str_value, bool &status, double &
   }
 
   EEPROM.put(eepromAddress, status);
+  EEPROM.commit();
 }
 
 void updateSetpoint(const char *key, const char *str_value, double &setpoint, int eepromAddress)
@@ -239,14 +240,15 @@ void updateSetpoint(const char *key, const char *str_value, double &setpoint, in
   {
     printf("Conversion error, non-convertible part: %s\n", end);
   }
-
+  setpoint = double_value;
+  Serial.print(eepromAddress);
   EEPROM.put(eepromAddress, double_value);
-  EEPROM.get(eepromAddress, setpoint);
+  EEPROM.commit();
 }
 
 void setup()
 {
-  EEPROM.begin(19);
+  EEPROM.begin(64);
 
   //************************ SERIAL COMM SETUP ************************
   Serial.begin(115200);
@@ -341,6 +343,10 @@ void setup()
     for (JsonPair kv : doc.as<JsonObject>()) {
     const char* key_value = kv.key().c_str();
     const char* str_value = kv.value().as<const char*>();
+    Serial.print(key_value);
+    Serial.print(" : ");
+    Serial.print(str_value);
+    Serial.print("\n");
 
       if (strcmp(key_value, "ferm1_Status") == 0) {
           updateStatus(key_value, str_value, ferm1_Status, ferm1_Output, ferm1_pid_i, EEPROM_ADDR_FERM1STATUS);
@@ -360,7 +366,7 @@ void setup()
           updateSetpoint(key_value, str_value, ferm4_Setpoint, EEPROM_ADDR_SETPOINT4);
       }
     }
-
+    
     request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"JSON data received\"}"); });
 
   // ******************************************************************

@@ -40,8 +40,11 @@
     }
     .btn-toggle-off {
       background-color: #8b1616;
-      color: #fff;
+      color: #ebead3;
       border: none;
+    }
+    .btn-no-hover-bg:hover {
+      background-color: inherit !important; /* Keep the original background color */
     }
     .box {
       border: 1px solid #0f3f88;
@@ -106,8 +109,8 @@
         <div class="box-body">
           <div class="row mb-3">
             <div class="col-md-6">
-              <div id="setpoint1" class="mb-3">Temperature: Waiting for updates...</div>
-              <div id="tc1TempC1" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="setpoint1" class="mb-3">Setpoint: Waiting for updates...</div>
+              <div id="tc1TempC1" class="mb-3">Temperature: Waiting for updates...</div>
               <div id="output1" class="mb-3">Output: Waiting for updates...</div>
               <div id="nextPumpCycleTime1" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
               <div id="pumpStatus1" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -154,8 +157,8 @@
         <div class="box-body">
           <div class="row mb-3">
             <div class="col-md-6">
-              <div id="setpoint2" class="mb-3">Temperature: Waiting for updates...</div>
-              <div id="tc1TempC2" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="setpoint2" class="mb-3">Setpoint: Waiting for updates...</div>
+              <div id="tc1TempC2" class="mb-3">Temperature: Waiting for updates...</div>
               <div id="output2" class="mb-3">Output: Waiting for updates...</div>
               <div id="nextPumpCycleTime2" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
               <div id="pumpStatus2" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -202,8 +205,8 @@
         <div class="box-body">
           <div class="row mb-3">
             <div class="col-md-6">
-              <div id="setpoint3" class="mb-3">Temperature: Waiting for updates...</div>
-              <div id="tc1TempC3" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="setpoint3" class="mb-3">Setpoint: Waiting for updates...</div>
+              <div id="tc1TempC3" class="mb-3">Temperature: Waiting for updates...</div>
               <div id="output3" class="mb-3">Output: Waiting for updates...</div>
               <div id="nextPumpCycleTime3" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
               <div id="pumpStatus3" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -250,8 +253,8 @@
         <div class="box-body">
           <div class="row mb-3">
             <div class="col-md-6">
-              <div id="setpoint4" class="mb-3">Temperature: Waiting for updates...</div>
-              <div id="tc1TempC4" class="mb-3">Humidity: Waiting for updates...</div>
+              <div id="setpoint4" class="mb-3">Setpoint: Waiting for updates...</div>
+              <div id="tc1TempC4" class="mb-3">Temperature: Waiting for updates...</div>
               <div id="output4" class="mb-3">Output: Waiting for updates...</div>
               <div id="nextPumpCycleTime4" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
               <div id="pumpStatus4" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -264,6 +267,17 @@
   </div>
   
   <script>
+
+    mouseOverButton = false;
+
+    document.getElementById('ferm1_Status').addEventListener('mouseover', function() {
+    mouseOverButton = true;
+    });
+
+    document.getElementById('ferm1_Status').addEventListener('mouseover', function() {
+    mouseOverButton = false;
+    });
+    
     // WebSocket connection for all fermenters
     const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
     
@@ -288,7 +302,7 @@
     
     // Function to update data for each fermenter
     function updateFermenterData(fermId, data) {
-      document.getElementById('setpoint' + fermId).innerText = 'Temperature: ' + data['setpoint'].toFixed(2);
+      document.getElementById('setpoint' + fermId).innerText = 'Setpoint: ' + data['setpoint'].toFixed(2);
       document.getElementById('tc1TempC' + fermId).innerText = 'Temperature: ' + data['tc1TempC'];
       document.getElementById('output' + fermId).innerText = 'Output: ' + data['output'];
       document.getElementById('nextPumpCycleTime' + fermId).innerText = 'Next Pump Cycle Time: ' + data['nextPumpCycleTime'];
@@ -300,15 +314,21 @@
         document.getElementById('ferm' + fermId + '_Setpoint').value = data['setpoint'].toFixed(2);
       }
 
-      var button = document.getElementById('ferm' + fermId + '_Status');
-      if (data['fermStatus'] === true) {
-        button.innerText = 'ON';
-        button.classList.remove('btn-toggle-off');
-        button.classList.add('btn-toggle-on');
-      } else {
-        button.innerText = 'OFF';
-        button.classList.remove('btn-toggle-on');
-        button.classList.add('btn-toggle-off');
+      if(!mouseOverButton) {
+        var button = document.getElementById('ferm' + fermId + '_Status');
+        if (data['fermStatus'] === true) {
+          button.innerText = 'ON';
+          button.classList.remove('btn-toggle-off');
+          button.classList.remove('btn-outline-danger')
+          button.classList.add('btn-toggle-on');
+          button.classList.add('btn-outline-success')
+        } else {
+          button.innerText = 'OFF';
+          button.classList.remove('btn-toggle-on');
+          button.classList.remove('btn-outline-success')
+          button.classList.add('btn-toggle-off');
+          button.classList.add('btn-outline-danger')
+        }
       }
       
     }
@@ -381,6 +401,14 @@
       }
     }
     
+    function mouse_enter(fermId) {
+      console.log("Mouse enter");
+    }
+
+    function mouse_leave(fermId) {
+      console.log("Mouse leave");
+    }
+
     var updatingSetpoint = false;
     
     function setpointInputChanged(value, fermId) {
