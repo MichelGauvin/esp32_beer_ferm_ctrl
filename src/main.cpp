@@ -558,6 +558,7 @@ void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pi
   }
   else
   {
+    windowStartTime = millis();
     //I need to find a way to managed the Next Pump Cycle Time when the temp reading is -127.
   }
 }
