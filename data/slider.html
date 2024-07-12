@@ -80,16 +80,15 @@
 <body>
 
 <div class="container equalizer">
-    <h2 class="text-center">Sound System Equalizer</h2>
     <div class="row">
         <div class="col">
             <div class="slider-container">
-                <div class="slider-background" data-text="Pump Off">
-                    <div class="slider-fill" id="slider1-fill" data-text="Pump On"></div>
+                <div class="slider-background">
+                    <div class="slider-fill" id="slider1-fill"></div>
                 </div>
-                <input type="range" min="1" max="100" value="50" class="slider" id="slider1">
+                <input type="range" min="1" max="300" value="300" class="slider" id="slider1">
             </div>
-            <p class="slider-value">Value: <span id="value1">50</span></p>
+            <p class="slider-value">Value: <span id="value1">10</span></p>
         </div>
     </div>
 </div>
@@ -107,7 +106,7 @@
                 // Simulate a server response
                 setTimeout(() => {
                     resolve({
-                        slider1: 30
+                        slider1: 10
                     });
                 }, 1000);
             });

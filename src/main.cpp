@@ -470,7 +470,7 @@ void updateNextPumpCycleTime()
 {
   if (ferm1_Status == true)
   {
-    ferm1Data.nextPumpCycleTime = ((WindowSize * 1000 - (millis() - ferm1_windowStartTime)) + 500) / 1000;
+    ferm1Data.nextPumpCycleTime = ((WindowSize * 1000 - (millis() - ferm1_windowStartTime))) / 1000;
   }
   else
   {
@@ -558,7 +558,7 @@ void handleFermenterPIDLoop(bool &status, double &input, double &output, int &pi
   }
   else
   {
-    windowStartTime = millis();
+    //I need to find a way to managed the Next Pump Cycle Time when the temp reading is -127.
   }
 }
 
@@ -641,9 +641,6 @@ void loop()
   json = ferm4Data.toJson();
   webSocket.broadcastTXT(json);
 
-  // First, stop listening so we can talk.
-  // radio.stopListening();
-
   // Send data for the 4 fermenters
   /*
   String message1 = "Fermenteur 1: Setpoint = " + (String)ferm1Data.setpoint + "\tTC1= " + (String)ferm1Data.tc1TempC + "\tOutput = " + (String)ferm1Data.output + "\tnextPumpCycleTime = " + ferm1Data.nextPumpCycleTime + "\tpumpStatus = " + (String)ferm1Data.pumpStatus;
@@ -655,25 +652,3 @@ void loop()
   Serial.println(message);
 */
 }
-
-/*
-Explanation
-HTML and JavaScript:
-
-Two forms are created, each with unique IDs (form1 and form2).
-The sendData(formId) function is called when either form is submitted. It prevents the default form submission behavior and sends an AJAX POST request to the server with the form data as a JSON object.
-The function collects all input elements from the form, creates a JSON object, and sends it to the server.
-NodeMCU Server:
-
-The server listens for GET requests on the root path ("/") and POST requests on the "/post" path.
-When a POST request is received on "/post", the server parses the JSON data using the ArduinoJson library.
-The parsed values are printed to the Serial Monitor, and a response is sent back to the client.
-Running the Code
-Replace "your_SSID" and "your_PASSWORD" with your WiFi credentials.
-Install the ESPAsyncWebServer and ArduinoJson libraries in the Arduino IDE.
-Upload the NodeMCU code to your ESP8266/ESP32.
-Open the Serial Monitor to see the incoming data.
-Open the IP address of your NodeMCU in a web browser to access the forms.
-Enter values in the forms and submit them. The page will update the response without reloading, and you'll see the input values printed in the Serial Monitor.
-This approach allows you to handle multiple forms, each submitting its data independently, and process them as needed on the NodeMCU.
-*/
