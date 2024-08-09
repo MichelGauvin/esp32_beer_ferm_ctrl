@@ -27,12 +27,12 @@
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
 
-#define RELAY1 12
-#define RELAY2 13
-#define RELAY3 14
-#define RELAY4 15
+#define RELAY1 12 // D6 IO12
+#define RELAY2 13 // D7 IO13
+#define RELAY3 14 // D5 IO14
+#define RELAY4 15 // D8 IO15
 
-#define ONE_WIRE_BUS 4
+#define ONE_WIRE_BUS 4 // D2 IO4
 
 // These are the mandatory persistent values
 // If the controller reboot, it will start from the last known state
