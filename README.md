@@ -1,4 +1,11 @@
-Voici la configuration pour nginx:
+
+# Configuration
+
+Il faut mettre la configuration suivante dans le fichier suivant qui est utilisé par le conteneur nginx:
+
+fichier: /srv/docker/nginx/etc/nginx.conf
+
+Mettre la configuration suivante à la fin de l'élément http {}:
 
         server {
             listen 443 ssl;
@@ -22,4 +29,10 @@ Voici la configuration pour nginx:
                 proxy_set_header Connection "upgrade";
                 proxy_set_header Host $host;
             }
-}
+        }
+
+# TODO
+
+- Permettre de faire un scan des DS18B20 et les associer aux fermenteurs, via la page web.
+- Permettre de changer les paramètres PID de chaque fermenteur, via la page web.
+- ...
