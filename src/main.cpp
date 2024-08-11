@@ -32,7 +32,7 @@
 #define RELAY3 14 // D5 IO14
 #define RELAY4 15 // D8 IO15
 
-#define ONE_WIRE_BUS 4 // D2 IO4
+#define ONE_WIRE_BUS 4 // D2
 
 // These are the mandatory persistent values
 // If the controller reboot, it will start from the last known state
@@ -56,13 +56,6 @@ DNSServer dns;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-const uint8_t TC1[8] = {0x28, 0x80, 0x5E, 0xD0, 0x4F, 0x20, 0x01, 0x33};
-const uint8_t TC2[8] = {0x28, 0xFC, 0x9E, 0x03, 0x00, 0x00, 0x80, 0x00}; // N'est pas branché
-const uint8_t TC3[8] = {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}; //
-const uint8_t TC4[8] = {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92};
-const uint8_t TC5[8] = {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80};
-
-bool read_tc;
 //************************ END TEMPERATURE DEFINITION ***************
 
 //************************ PID DEFINITION****************************
@@ -107,10 +100,10 @@ struct Fermenter {
 };
 
 Fermenter fermenters[4] = {
-  {1, 0, 0, 0, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0x80, 0x5E, 0xD0, 0x4F, 0x20, 0x01, 0x33}, RELAY1},
-  {2, 0, 0, 0, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, TC3[8], RELAY2},
-  {3, 0, 0, 0, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, TC4[8], RELAY3},
-  {4, 0, 0, 0, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, TC5[8], RELAY4}
+  {1, 0, 0, 0, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}, RELAY1},
+  {2, 0, 0, 0, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}, RELAY2},
+  {3, 0, 0, 0, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92}, RELAY3},
+  {4, 0, 0, 0, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80}, RELAY4}
 };
 
 const int pid_T = 30; // PID computation interval in seconds
@@ -207,6 +200,28 @@ void updateSetpoint(const char *key, const char *str_value, double &setpoint, in
 
 void setup()
 {
+  //************************ RELAY SETUP ******************************
+  // We need to configure the pinMode to Ferm1_Input_PULLUP first
+  // It avoids having a HIGH state when configuring the pinMode to Ferm1_Output.
+  // IMPORTANT: WE INVERSE THE RELAY LOGIC BY DOING THIS
+  // Issue #3 mikesbrewshop.com
+  pinMode(RELAY1, INPUT_PULLUP);
+  pinMode(RELAY2, INPUT_PULLUP);
+  pinMode(RELAY3, INPUT_PULLUP);
+  pinMode(RELAY4, INPUT_PULLUP);
+  //delay(100);
+  pinMode(RELAY1, OUTPUT);
+  pinMode(RELAY2, OUTPUT);
+  pinMode(RELAY3, OUTPUT);
+  pinMode(RELAY4, OUTPUT);
+  for (int i = 0; i < 4; ++i){
+    digitalWrite(fermenters[i].relayPin, HIGH);
+    fermenters[i].pumpStatus = false;
+  }
+
+
+  //************************ END RELAY SETUP ******************************
+
   EEPROM.begin(64);
 
   //************************ SERIAL COMM SETUP ************************
@@ -268,10 +283,6 @@ void setup()
     for (JsonPair kv : doc.as<JsonObject>()) {
     const char* key_value = kv.key().c_str();
     const char* str_value = kv.value().as<const char*>();
-    Serial.print(key_value);
-    Serial.print(" : ");
-    Serial.print(str_value);
-    Serial.print("\n");
 
       if (strcmp(key_value, "ferm1_Status") == 0) {
           updateStatus(key_value, str_value, fermenters[0].fermStatus, fermenters[0].output, fermenters[0].pidIntervalCounter, EEPROM_ADDR_FERM1STATUS);
@@ -317,24 +328,6 @@ void setup()
 
   
   //************************ END PID SETUP*****************************
-
-  //************************ RELAY SETUP ******************************
-  // We need to configure the pinMode to Ferm1_Input_PULLUP first
-  // It avoids having a HIGH state when configuring the pinMode to Ferm1_Output.
-  // IMPORTANT: WE INVERSE THE RELAY LOGIC BY DOING THIS
-  // Issue #3 mikesbrewshop.com
-  pinMode(RELAY1, INPUT_PULLUP);
-  pinMode(RELAY1, OUTPUT);
-
-  pinMode(RELAY2, INPUT_PULLUP);
-  pinMode(RELAY2, OUTPUT);
-
-  pinMode(RELAY3, INPUT_PULLUP);
-  pinMode(RELAY3, OUTPUT);
-
-  pinMode(RELAY4, INPUT_PULLUP);
-  pinMode(RELAY4, OUTPUT);
-  //************************ END RELAY SETUP ******************************
 
   //************************ TEMPERATURE READING SETUP ********************
   // Make asynchronous call to requestTempeature()
@@ -440,10 +433,6 @@ void loop()
   for (int i = 0; i < 4; ++i)
   {
     fermenters[i].input = sensors.getTempC(fermenters[i].tc);
-    double test = sensors.getTempC(TC1);
-    Serial.print("Temp: ");
-    Serial.print(test);
-    Serial.print("\n");
   }
 
   // Calling requestTemperatures() here makes sure we leave enough time for the temperature conversion (1 second).
