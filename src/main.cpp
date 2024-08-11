@@ -321,7 +321,7 @@ void setup()
   }
 
   // Tell the PID to range between 0 and the full window size
-  fermenters[0].pid.SetOutputLimits(0, WindowSize / 10); // Limit maximum Ferm1_Output to 30 seconds every 5 minutes
+  fermenters[0].pid.SetOutputLimits(0, WindowSize / 1); // Limit maximum Ferm1_Output to 30 seconds every 5 minutes
   fermenters[1].pid.SetOutputLimits(0, WindowSize / 1);  // Limit maximum Ferm2_Output to 300 seconds every 5 minutes
   fermenters[2].pid.SetOutputLimits(0, WindowSize / 10); // Limit maximum Ferm3_Output to 30 seconds every 5 minutes
   fermenters[3].pid.SetOutputLimits(0, WindowSize / 10); // Limit maximum Ferm4_Output to 30 seconds every 5 minutes
