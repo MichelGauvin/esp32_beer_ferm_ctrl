@@ -6,6 +6,7 @@
   TODO:
   - Master pump control let the operator to force the pump ON for the desired duration via web command
   - Implement a cold crash process
+  - Limiter l'affichage de l'output à 0 décimale.
 
   BUG:
   - Il y a un bug avec le windows start time, on devrait le resetter lorsqu'on met le PID à "ON"
@@ -286,18 +287,26 @@ void setup()
 
       if (strcmp(key_value, "ferm1_Status") == 0) {
           updateStatus(key_value, str_value, fermenters[0].fermStatus, fermenters[0].output, fermenters[0].pidIntervalCounter, EEPROM_ADDR_FERM1STATUS);
+          digitalWrite(fermenters[0].relayPin, HIGH);
+          fermenters[0].pumpStatus = false;
       } else if (strcmp(key_value, "ferm1_Setpoint") == 0) {
           updateSetpoint(key_value, str_value, fermenters[0].setpoint, EEPROM_ADDR_SETPOINT1);
       } else if (strcmp(key_value, "ferm2_Status") == 0) {
           updateStatus(key_value, str_value, fermenters[1].fermStatus, fermenters[1].output, fermenters[1].pidIntervalCounter, EEPROM_ADDR_FERM2STATUS);
+          digitalWrite(fermenters[1].relayPin, HIGH);
+          fermenters[1].pumpStatus = false;
       } else if (strcmp(key_value, "ferm2_Setpoint") == 0) {
           updateSetpoint(key_value, str_value, fermenters[1].setpoint, EEPROM_ADDR_SETPOINT2);
       } else if (strcmp(key_value, "ferm3_Status") == 0) {
           updateStatus(key_value, str_value, fermenters[2].fermStatus, fermenters[2].output, fermenters[2].pidIntervalCounter, EEPROM_ADDR_FERM3STATUS);
+          digitalWrite(fermenters[2].relayPin, HIGH);
+          fermenters[2].pumpStatus = false;
       } else if (strcmp(key_value, "ferm3_Setpoint") == 0) {
           updateSetpoint(key_value, str_value, fermenters[2].setpoint, EEPROM_ADDR_SETPOINT3);
       } else if (strcmp(key_value, "ferm4_Status") == 0) {
           updateStatus(key_value, str_value, fermenters[3].fermStatus, fermenters[3].output, fermenters[3].pidIntervalCounter, EEPROM_ADDR_FERM4STATUS);
+          digitalWrite(fermenters[3].relayPin, HIGH);
+          fermenters[3].pumpStatus = false;
       } else if (strcmp(key_value, "ferm4_Setpoint") == 0) {
           updateSetpoint(key_value, str_value, fermenters[3].setpoint, EEPROM_ADDR_SETPOINT4);
       }
@@ -367,7 +376,6 @@ void handleFermenterPIDLoop()
     if (fermenters[i].fermStatus) {
           
       if (fermenters[i].input != -127) {
-
         fermenters[i].input = fermenters[i].movingAvg.push(fermenters[i].input).get();
 
         // Compute PID output only every 30 seconds

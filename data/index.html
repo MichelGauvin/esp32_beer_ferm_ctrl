@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,39 +20,48 @@
       font-family: Arial, sans-serif;
       background-color: #f8f9fa;
     }
+
     .container {
       background-color: #fff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
     }
+
     h2 {
       font-size: 2.5rem;
       text-align: center;
       margin-bottom: 30px;
     }
+
     .form-control {
       border: 2px solid #0f3f88;
     }
+
     .btn-toggle-on {
       background-color: #198754;
       color: #fff;
       border: none;
     }
+
     .btn-toggle-off {
       background-color: #f04f4f;
       color: #ebead3;
       border: none;
     }
+
     .btn-no-hover-bg:hover {
-      background-color: inherit !important; /* Keep the original background color */
+      background-color: inherit !important;
+      /* Keep the original background color */
     }
+
     .box {
       border: 1px solid #181b0f;
       padding: 15px;
       border-radius: 5px;
       margin-bottom: 20px;
     }
+
     /* Fermenter box colors */
     .fermenter1-box {
       border: 1px solid #0f3f88;
@@ -59,24 +69,28 @@
       border-radius: 5px;
       margin-bottom: 20px;
     }
+
     .fermenter2-box {
       border: 1px solid #198754;
       padding: 15px;
       border-radius: 5px;
       margin-bottom: 20px;
     }
+
     .fermenter3-box {
       border: 1px solid #d9534f;
       padding: 15px;
       border-radius: 5px;
       margin-bottom: 20px;
     }
+
     .fermenter4-box {
       border: 1px solid #f0ad4e;
       padding: 15px;
       border-radius: 5px;
       margin-bottom: 20px;
     }
+
     .box-header {
       color: white;
       padding: 1px;
@@ -85,6 +99,7 @@
       border-bottom-left-radius: 7px;
       border-bottom-right-radius: 7px;
     }
+
     .box-title {
       margin-top: 0;
       color: white;
@@ -94,27 +109,38 @@
       border-bottom-left-radius: 7px;
       border-bottom-right-radius: 7px;
     }
+
     .box-body {
       padding: 5px;
     }
+
     .blue-outline {
       border-color: #0f3f88;
     }
+
     /* Fermenter header colors */
     .fermenter1-header {
-      background-color: #0f3f88; /* Blue */
+      background-color: #0f3f88;
+      /* Blue */
     }
+
     .fermenter2-header {
-      background-color: #198754; /* Green */
+      background-color: #198754;
+      /* Green */
     }
+
     .fermenter3-header {
-      background-color: #d9534f; /* Red */
+      background-color: #d9534f;
+      /* Red */
     }
+
     .fermenter4-header {
-      background-color: #f0ad4e; /* Orange */
+      background-color: #f0ad4e;
+      /* Orange */
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h2>Mikes Brew Shop - Fermenter Control</h2>
@@ -125,18 +151,23 @@
           <div class="box-header text-center fermenter1-header">
             <h5 class="box-title">Fermenter 1</h5>
           </div>
-        </br>
+          </br>
           <div class="fermenter1-box">
             <div class="box-header">
               <h5 class="box-title fermenter1-header">Controls</h5>
             </div>
             <div class="box-body">
               <form id="form1">
-                <div class="mb-3 row">
-                  <label for="ferm1_Status" class="col-sm-4 col-form-label">Status</label>
-                  <div class="col-sm-8">
+                <div class="mb-3 d-flex">
+                  <div class="d-flex flex-column me-2">
+                    <label for="ferm1_Status" class="form-label">Status</label>
                     <button type="button" id="ferm1_Status" name="ferm1_Status" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(1)">OFF</button>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <label for="ferm1_ColdCrash" class="form-label">Cold Crash</label>
+                    <button type="button" id="ferm1_ColdCrash" name="ferm1_ColdCrash" class="btn btn-secondary btn-lg"
+                      onclick="toggleColdCrash(1)">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -157,8 +188,10 @@
             <div class="box-body">
               <div class="row mb-3">
                 <div class="col-md-12">
-                  <div id="tc1TempC1" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting for updates...</div>
-                  <div id="setpoint1" class="mb-3"  style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for updates...</div>                  
+                  <div id="tc1TempC1" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
+                    for updates...</div>
+                  <div id="setpoint1" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
+                    updates...</div>
                   <div id="output1" class="mb-3">Output: Waiting for updates...</div>
                   <div id="nextPumpCycleTime1" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
                   <div id="pumpStatus1" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -175,18 +208,23 @@
           <div class="box-header text-center fermenter2-header">
             <h5 class="box-title">Fermenter 2</h5>
           </div>
-        </br>
+          </br>
           <div class="fermenter2-box">
             <div class="box-header">
               <h5 class="box-title fermenter2-header">Controls</h5>
             </div>
             <div class="box-body">
               <form id="form2">
-                <div class="mb-3 row">
-                  <label for="ferm2_Status" class="col-sm-4 col-form-label">Status</label>
-                  <div class="col-sm-8">
+                <div class="mb-3 d-flex">
+                  <div class="d-flex flex-column me-2">
+                    <label for="ferm2_Status" class="form-label">Status</label>
                     <button type="button" id="ferm2_Status" name="ferm2_Status" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(2)">OFF</button>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <label for="ferm2_ColdCrash" class="form-label">Cold Crash</label>
+                    <button type="button" id="ferm2_ColdCrash" name="ferm2_ColdCrash" class="btn btn-secondary btn-lg"
+                      onclick="toggleColdCrash(2)">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -207,8 +245,10 @@
             <div class="box-body">
               <div class="row mb-3">
                 <div class="col-md-12">
-                  <div id="tc1TempC2" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting for updates...</div>
-                  <div id="setpoint2" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for updates...</div>
+                  <div id="tc1TempC2" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
+                    for updates...</div>
+                  <div id="setpoint2" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
+                    updates...</div>
                   <div id="output2" class="mb-3">Output: Waiting for updates...</div>
                   <div id="nextPumpCycleTime2" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
                   <div id="pumpStatus2" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -225,18 +265,23 @@
           <div class="box-header text-center fermenter3-header">
             <h5 class="box-title">Fermenter 3</h5>
           </div>
-        </br>
+          </br>
           <div class="fermenter3-box">
             <div class="box-header">
               <h5 class="box-title fermenter3-header">Controls</h5>
             </div>
             <div class="box-body">
               <form id="form3">
-                <div class="mb-3 row">
-                  <label for="ferm3_Status" class="col-sm-4 col-form-label">Status</label>
-                  <div class="col-sm-8">
+                <div class="mb-3 d-flex">
+                  <div class="d-flex flex-column me-2">
+                    <label for="ferm3_Status" class="form-label">Status</label>
                     <button type="button" id="ferm3_Status" name="ferm3_Status" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(3)">OFF</button>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <label for="ferm3_ColdCrash" class="form-label">Cold Crash</label>
+                    <button type="button" id="ferm3_ColdCrash" name="ferm3_ColdCrash" class="btn btn-secondary btn-lg"
+                      onclick="toggleColdCrash(3)">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -257,8 +302,10 @@
             <div class="box-body">
               <div class="row mb-3">
                 <div class="col-md-12">
-                  <div id="tc1TempC3" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting for updates...</div>
-                  <div id="setpoint3" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for updates...</div>
+                  <div id="tc1TempC3" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
+                    for updates...</div>
+                  <div id="setpoint3" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
+                    updates...</div>
                   <div id="output3" class="mb-3">Output: Waiting for updates...</div>
                   <div id="nextPumpCycleTime3" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
                   <div id="pumpStatus3" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -275,18 +322,23 @@
           <div class="box-header text-center fermenter4-header">
             <h5 class="box-title">Fermenter 4</h5>
           </div>
-        </br>
+          </br>
           <div class="fermenter4-box">
             <div class="box-header">
               <h5 class="box-title fermenter4-header">Controls</h5>
             </div>
             <div class="box-body">
               <form id="form4">
-                <div class="mb-3 row">
-                  <label for="ferm4_Status" class="col-sm-4 col-form-label">Status</label>
-                  <div class="col-sm-8">
+                <div class="mb-3 d-flex">
+                  <div class="d-flex flex-column me-2">
+                    <label for="ferm4_Status" class="form-label">Status</label>
                     <button type="button" id="ferm4_Status" name="ferm4_Status" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(4)">OFF</button>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <label for="ferm4_ColdCrash" class="form-label">Cold Crash</label>
+                    <button type="button" id="ferm4_ColdCrash" name="ferm4_ColdCrash" class="btn btn-secondary btn-lg"
+                      onclick="toggleColdCrash(4)">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -307,8 +359,10 @@
             <div class="box-body">
               <div class="row mb-3">
                 <div class="col-md-12">
-                  <div id="tc1TempC4" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting for updates...</div>
-                  <div id="setpoint4" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for updates...</div>
+                  <div id="tc1TempC4" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
+                    for updates...</div>
+                  <div id="setpoint4" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
+                    updates...</div>
                   <div id="output4" class="mb-3">Output: Waiting for updates...</div>
                   <div id="nextPumpCycleTime4" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
                   <div id="pumpStatus4" class="mb-3">Pump Status: Waiting for updates...</div>
@@ -321,41 +375,40 @@
       </div>
     </div>
   </div>
-  
+
   <script>
-
+    updateFermStatus = true;
     mouseOverButton = false;
 
-    document.getElementById('ferm1_Status').addEventListener('mouseover', function() {
-    mouseOverButton = true;
-    });
-
-    document.getElementById('ferm1_Status').addEventListener('mouseover', function() {
-    mouseOverButton = false;
-    });
-    
     // WebSocket connection for all fermenters
     const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
-    
+
     ws.onopen = function () {
       console.log('WebSocket connection established');
     };
-    
+
     ws.onmessage = function (event) {
       const data = JSON.parse(event.data);
       // Update data for each fermenter
       fermenterId = data['fermenterId'];
       updateFermenterData(fermenterId, data);
     };
-    
+
     ws.onclose = function () {
       console.log('WebSocket connection closed');
     };
-    
+
     ws.onerror = function (error) {
       console.log('WebSocket error: ', error);
     };
-    
+
+    function toggleUpdateFermStatusAfterDelay() {
+      // Set a timeout to toggle the boolean after 2 seconds
+      setTimeout(function () {
+        updateFermStatus = !updateFermStatus;  // Toggle the boolean
+      }, 1200);  // 2000 milliseconds = 2 seconds
+    }
+
     // Function to update data for each fermenter
     function updateFermenterData(fermId, data) {
       lpumpStatus = "";
@@ -364,48 +417,47 @@
       if (data['pumpStatus'] == true) {
         lpumpStatus = "ON";
       }
-      else{
+      else {
         lpumpStatus = "OFF";
       }
 
       if (data['fermStatus'] == true) {
         lfermStatus = "ON";
       }
-      else{
+      else {
         lfermStatus = "OFF";
       }
 
       document.getElementById('setpoint' + fermId).innerText = 'Setpoint: ' + data['setpoint'].toFixed(2) + " °C";
       document.getElementById('tc1TempC' + fermId).innerText = 'Temp: ' + data['tc1TempC'].toFixed(2) + " °C";
-      document.getElementById('output' + fermId).innerText = 'Output: ' + data['output'] + " sec";
+      document.getElementById('output' + fermId).innerText = 'Output: ' + data['output'].toFixed(0) + " sec";
       document.getElementById('nextPumpCycleTime' + fermId).innerText = 'Next Pump Cycle Time: ' + data['nextPumpCycleTime'] + " sec";
       document.getElementById('pumpStatus' + fermId).innerText = 'Pump Status: ' + lpumpStatus;
       document.getElementById('fermStatus' + fermId).innerText = 'Ferm Status: ' + lfermStatus;
-    
+
       // Update form inputs with server values
       if (!updatingSetpoint) {
         document.getElementById('ferm' + fermId + '_Setpoint').value = data['setpoint'].toFixed(2);
       }
 
-      if(!mouseOverButton) {
-        var button = document.getElementById('ferm' + fermId + '_Status');
-        if (data['fermStatus'] === true) {
-          button.innerText = 'ON';
-          button.classList.remove('btn-toggle-off');
-          button.classList.remove('btn-outline-danger')
-          button.classList.add('btn-toggle-on');
-          button.classList.add('btn-outline-success')
-        } else {
-          button.innerText = 'OFF';
-          button.classList.remove('btn-toggle-on');
-          button.classList.remove('btn-outline-success')
-          button.classList.add('btn-toggle-off');
-          button.classList.add('btn-outline-danger')
+        if (updateFermStatus) {
+          var button = document.getElementById('ferm' + fermId + '_Status');
+          if (data['fermStatus'] === true) {
+            button.innerText = 'ON';
+            button.classList.remove('btn-toggle-off');
+            button.classList.remove('btn-outline-danger')
+            button.classList.add('btn-toggle-on');
+            button.classList.add('btn-outline-success');
+          } else {
+            button.innerText = 'OFF';
+            button.classList.remove('btn-toggle-on');
+            button.classList.remove('btn-outline-success')
+            button.classList.add('btn-toggle-off');
+            button.classList.add('btn-outline-danger');
+          }
         }
-      }
-      
     }
-    
+
     // Fetch initial values from the server for all fermenters
     document.addEventListener("DOMContentLoaded", function () {
       fetchInitialValues(1);
@@ -413,7 +465,7 @@
       fetchInitialValues(3);
       fetchInitialValues(4);
     });
-    
+
     function fetchInitialValues(fermId) {
       var xhr = new XMLHttpRequest();
       xhr.open("GET", "/initial-values?id=" + fermId, true);
@@ -435,7 +487,7 @@
       };
       xhr.send();
     }
-    
+
     // Function to send data for each fermenter
     function sendData(inputName, inputValue) {
       var fermId = inputName.slice(-1);
@@ -447,19 +499,24 @@
       var url = "/post";
       var data = {};
       data[inputName] = inputValue;
-    
+
       xhr.open("POST", url, true);
       xhr.setRequestHeader("Content-Type", "application/json");
-    
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-          document.getElementById(inputName + "-response").innerHTML = xhr.responseText;
-        }
-      };
+
+// I don't need this feedback, we don't need to write a successfull message to the user.
+//      xhr.onreadystatechange = function () {
+//        if (xhr.readyState == 4 && xhr.status == 200) {
+//          console.log(inputName);
+//          document.getElementById(inputName + "-response").innerHTML = xhr.responseText;
+//        }
+//      };
+
       xhr.send(JSON.stringify(data));
     }
-    
+
     function toggleButton(fermId) {
+      toggleUpdateFermStatusAfterDelay();
+      updateFermStatus = false;
       var button = document.getElementById("ferm" + fermId + "_Status");
       if (button.innerText === "OFF") {
         button.innerText = "ON";
@@ -473,25 +530,18 @@
         sendData("ferm" + fermId + "_Status", "OFF");
       }
     }
-    
-    function mouse_enter(fermId) {
-      console.log("Mouse enter");
-    }
-
-    function mouse_leave(fermId) {
-      console.log("Mouse leave");
-    }
 
     var updatingSetpoint = false;
-    
+
     function setpointInputChanged(value, fermId) {
       updatingSetpoint = true;
       sendData("ferm" + fermId + "_Setpoint", value);
     }
-    
+
     function setpointInputBlur() {
       updatingSetpoint = false;
     }
   </script>
 </body>
+
 </html>
