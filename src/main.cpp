@@ -55,8 +55,8 @@
 #define EEPROM_ADDR_FERM3STATUS 36
 #define EEPROM_ADDR_FERM4STATUS 38
 
-int EEPROM_ADDR_SETPOINT_OFFSET[4] = {EEPROM_ADDR_SETPOINT1, EEPROM_ADDR_SETPOINT2, EEPROM_ADDR_SETPOINT3, EEPROM_ADDR_SETPOINT4};
-int EEPROM_ADDR_FERMSTATUS_OFFSET[4] = {EEPROM_ADDR_FERM1STATUS, EEPROM_ADDR_FERM2STATUS, EEPROM_ADDR_FERM3STATUS, EEPROM_ADDR_FERM4STATUS};
+int EEPROM_ADDR_SETPOINT[4] = {EEPROM_ADDR_SETPOINT1, EEPROM_ADDR_SETPOINT2, EEPROM_ADDR_SETPOINT3, EEPROM_ADDR_SETPOINT4};
+int EEPROM_ADDR_FERMSTATUS[4] = {EEPROM_ADDR_FERM1STATUS, EEPROM_ADDR_FERM2STATUS, EEPROM_ADDR_FERM3STATUS, EEPROM_ADDR_FERM4STATUS};
 
 // const char* ssid = "Michel";
 // const char* password = "Mikego20";
@@ -87,6 +87,7 @@ struct Fermenter
   double output;
   bool fermStatus;
   bool pumpStatus;
+  bool coldCrash;
   float nextPumpCycleTime;
   PID pid;
   MovingAveragePlus<float> movingAvg;
@@ -106,6 +107,7 @@ struct Fermenter
     doc["nextPumpCycleTime"] = nextPumpCycleTime;
     doc["pumpStatus"] = pumpStatus;
     doc["fermStatus"] = fermStatus;
+    doc["coldCrash"] = coldCrash;
 
     String jsonOutput;
     serializeJson(doc, jsonOutput);
@@ -114,10 +116,10 @@ struct Fermenter
 };
 
 Fermenter fermenters[4] = {
-    {1, 0, 0, 0, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}, RELAY1},
-    {2, 0, 0, 0, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}, RELAY2},
-    {3, 0, 0, 0, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92}, RELAY3},
-    {4, 0, 0, 0, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80}, RELAY4}};
+    {1, 0, 0, 0, false, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}, RELAY1},
+    {2, 0, 0, 0, false, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}, RELAY2},
+    {3, 0, 0, 0, false, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92}, RELAY3},
+    {4, 0, 0, 0, false, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80}, RELAY4}};
 
 const int pid_T = 30; // PID computation interval in seconds
 const int WindowSize = 300;
@@ -167,6 +169,29 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   }
 }
 //*********** END WebSocket server object on port 81 ******************
+
+void setPumpColdCrash(const char *str_value, bool &coldCrash, uint8_t relayPin, int fermIndex)
+{
+  printf("Cold crash %s, %d\n", str_value, relayPin);
+  if (str_value == NULL)
+  {
+    printf("Error: str_value is NULL\n");
+    return;
+  }
+
+  if (strcmp(str_value, "ON") == 0)
+  {
+    coldCrash = true;
+    digitalWrite(relayPin, LOW);
+    fermenters[fermIndex].pumpStatus = true;
+  }
+  else
+  {
+    coldCrash = false;
+    digitalWrite(relayPin, HIGH);
+    fermenters[fermIndex].pumpStatus = false;
+  }
+}
 
 void updateStatus(const char *key, const char *str_value, bool &status, double &output, int &pid_i, int eepromAddress)
 {
@@ -296,30 +321,31 @@ void setup()
     for (JsonPair kv : doc.as<JsonObject>()) {
     const char* key_value = kv.key().c_str();
     const char* str_value = kv.value().as<const char*>();
-
     int fermIndex = -1;
 
     // Determine the fermenter index based on the key_value
-    if (strcmp(key_value, "ferm1_Status") == 0 || strcmp(key_value, "ferm1_Setpoint") == 0) {
+    if (strcmp(key_value, "ferm1_Status") == 0 || strcmp(key_value, "ferm1_Setpoint") == 0 || strcmp(key_value, "ferm1_ColdCrash") == 0) {
         fermIndex = 0;
-    } else if (strcmp(key_value, "ferm2_Status") == 0 || strcmp(key_value, "ferm2_Setpoint") == 0) {
+    } else if (strcmp(key_value, "ferm2_Status") == 0 || strcmp(key_value, "ferm2_Setpoint") == 0 || strcmp(key_value, "ferm2_ColdCrash") == 0) {
         fermIndex = 1;
-    } else if (strcmp(key_value, "ferm3_Status") == 0 || strcmp(key_value, "ferm3_Setpoint") == 0) {
+    } else if (strcmp(key_value, "ferm3_Status") == 0 || strcmp(key_value, "ferm3_Setpoint") == 0 || strcmp(key_value, "ferm3_ColdCrash") == 0) {
         fermIndex = 2;
-    } else if (strcmp(key_value, "ferm4_Status") == 0 || strcmp(key_value, "ferm4_Setpoint") == 0) {
+    } else if (strcmp(key_value, "ferm4_Status") == 0 || strcmp(key_value, "ferm4_Setpoint") == 0 || strcmp(key_value, "ferm4_ColdCrash") == 0) {
         fermIndex = 3;
     }
 
     // If a valid fermenter index is found, process the status or setpoint
     if (fermIndex != -1) {
         if (strstr(key_value, "Status") != NULL) {
-			// If we start or stop the fermenter we set the pump to OFF, the code will determine the later state
-			// This allows us to stop the pump immediately when we stop the fermenter.
-            updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, EEPROM_ADDR_FERM1STATUS + fermIndex * EEPROM_ADDR_FERMSTATUS_OFFSET[fermIndex]);
+      // If we start or stop the fermenter we set the pump to OFF, the code will determine the later state
+      // This allows us to stop the pump immediately when we stop the fermenter.
+            updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, EEPROM_ADDR_FERMSTATUS[fermIndex]);
             digitalWrite(fermenters[fermIndex].relayPin, HIGH);
             fermenters[fermIndex].pumpStatus = false;
         } else if (strstr(key_value, "Setpoint") != NULL) {
-            updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, EEPROM_ADDR_SETPOINT1 + fermIndex * EEPROM_ADDR_SETPOINT_OFFSET[fermIndex]);
+            updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, EEPROM_ADDR_SETPOINT[fermIndex]);
+        } else if (strstr(key_value, "ColdCrash") != NULL) {
+            setPumpColdCrash(str_value, fermenters[fermIndex].coldCrash, fermenters[fermIndex].relayPin, fermIndex);
         }
     }
 

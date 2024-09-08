@@ -163,12 +163,12 @@
                   <div class="d-flex flex-column me-2">
                     <label for="ferm1_Status" class="form-label">Status</label>
                     <button type="button" id="ferm1_Status" name="ferm1_Status" class="btn btn-toggle-off btn-lg"
-                      onclick="toggleButton(1)">OFF</button>
+                      onclick="toggleButton(1, 'ferm1_Status')">OFF</button>
                   </div>
                   <div class="d-flex flex-column">
                     <label for="ferm1_ColdCrash" class="form-label">Cold Crash</label>
-                    <button type="button" id="ferm1_ColdCrash" name="ferm1_ColdCrash" class="btn btn-secondary btn-lg"
-                      onclick="toggleColdCrash(1)">OFF</button>
+                    <button type="button" id="ferm1_ColdCrash" name="ferm1_ColdCrash" class="btn btn-toggle-off btn-lg"
+                      onclick="toggleButton(1, 'ferm1_ColdCrash')">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -220,12 +220,12 @@
                   <div class="d-flex flex-column me-2">
                     <label for="ferm2_Status" class="form-label">Status</label>
                     <button type="button" id="ferm2_Status" name="ferm2_Status" class="btn btn-toggle-off btn-lg"
-                      onclick="toggleButton(2)">OFF</button>
+                      onclick="toggleButton(2, 'ferm2_Status')">OFF</button>
                   </div>
                   <div class="d-flex flex-column">
                     <label for="ferm2_ColdCrash" class="form-label">Cold Crash</label>
-                    <button type="button" id="ferm2_ColdCrash" name="ferm2_ColdCrash" class="btn btn-secondary btn-lg"
-                      onclick="toggleColdCrash(2)">OFF</button>
+                    <button type="button" id="ferm2_ColdCrash" name="ferm2_ColdCrash" class="btn btn-toggle-off btn-lg"
+                      onclick="toggleButton(2, 'ferm2_ColdCrash')">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -277,12 +277,12 @@
                   <div class="d-flex flex-column me-2">
                     <label for="ferm3_Status" class="form-label">Status</label>
                     <button type="button" id="ferm3_Status" name="ferm3_Status" class="btn btn-toggle-off btn-lg"
-                      onclick="toggleButton(3)">OFF</button>
+                      onclick="toggleButton(3, 'ferm3_Status')">OFF</button>
                   </div>
                   <div class="d-flex flex-column">
                     <label for="ferm3_ColdCrash" class="form-label">Cold Crash</label>
-                    <button type="button" id="ferm3_ColdCrash" name="ferm3_ColdCrash" class="btn btn-secondary btn-lg"
-                      onclick="toggleColdCrash(3)">OFF</button>
+                    <button type="button" id="ferm3_ColdCrash" name="ferm3_ColdCrash" class="btn btn-toggle-off btn-lg"
+                      onclick="toggleButton(3, 'ferm3_ColdCrash')">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -334,12 +334,12 @@
                   <div class="d-flex flex-column me-2">
                     <label for="ferm4_Status" class="form-label">Status</label>
                     <button type="button" id="ferm4_Status" name="ferm4_Status" class="btn btn-toggle-off btn-lg"
-                      onclick="toggleButton(4)">OFF</button>
+                      onclick="toggleButton(4,'ferm4_Status')">OFF</button>
                   </div>
                   <div class="d-flex flex-column">
                     <label for="ferm4_ColdCrash" class="form-label">Cold Crash</label>
-                    <button type="button" id="ferm4_ColdCrash" name="ferm4_ColdCrash" class="btn btn-secondary btn-lg"
-                      onclick="toggleColdCrash(4)">OFF</button>
+                    <button type="button" id="ferm4_ColdCrash" name="ferm4_ColdCrash" class="btn btn-toggle-off btn-lg"
+                      onclick="toggleButton(4, 'ferm4_ColdCrash')">OFF</button>
                   </div>
                 </div>
                 <div class="mb-3 row">
@@ -414,6 +414,7 @@
     function updateFermenterData(fermId, data) {
       lpumpStatus = "";
       lfermStatus = "";
+      lfermColdcrash = "";
 
       if (data['pumpStatus'] == true) {
         lpumpStatus = "ON";
@@ -427,6 +428,13 @@
       }
       else {
         lfermStatus = "OFF";
+      }
+
+      if (data['coldCrash'] == true) {
+        lfermColdcrash = "ON";
+      }
+      else {
+        lfermColdcrash = "OFF";
       }
 
       document.getElementById('setpoint' + fermId).innerText = 'Setpoint: ' + data['setpoint'].toFixed(2) + " °C";
@@ -444,6 +452,20 @@
         if (updateFermStatus) {
           var button = document.getElementById('ferm' + fermId + '_Status');
           if (data['fermStatus'] === true) {
+            button.innerText = 'ON';
+            button.classList.remove('btn-toggle-off');
+            button.classList.remove('btn-outline-danger')
+            button.classList.add('btn-toggle-on');
+            button.classList.add('btn-outline-success');
+          } else {
+            button.innerText = 'OFF';
+            button.classList.remove('btn-toggle-on');
+            button.classList.remove('btn-outline-success')
+            button.classList.add('btn-toggle-off');
+            button.classList.add('btn-outline-danger');
+          }
+          var button = document.getElementById('ferm' + fermId + '_ColdCrash');
+          if (data['coldCrash'] === true) {
             button.innerText = 'ON';
             button.classList.remove('btn-toggle-off');
             button.classList.remove('btn-outline-danger')
@@ -485,22 +507,49 @@
       xhr.send(JSON.stringify(data));
     }
 
-    function toggleButton(fermId) {
-      toggleUpdateFermStatusAfterDelay();
-      updateFermStatus = false;
-      var button = document.getElementById("ferm" + fermId + "_Status");
-      if (button.innerText === "OFF") {
-        button.innerText = "ON";
-        button.classList.remove("btn-toggle-off");
-        button.classList.add("btn-toggle-on");
-        sendData("ferm" + fermId + "_Status", "ON");
+    function toggleButton(fermId, buttonType) {
+     toggleUpdateFermStatusAfterDelay();
+     updateFermStatus = false;
+    
+     var statusButton = document.getElementById('ferm' + fermId + '_Status');
+     var coldCrashButton = document.getElementById('ferm' + fermId + '_ColdCrash');
+
+    // Toggle Status button
+    if (buttonType === 'ferm' + fermId + '_Status' && !statusButton.disabled) {
+      if (statusButton.innerText === 'OFF') {
+        statusButton.innerText = 'ON';
+        statusButton.classList.remove('btn-toggle-off');
+        statusButton.classList.add('btn-toggle-on');
+        sendData(buttonType, "ON");
+        // Disable Cold Crash button when Status is ON
+        coldCrashButton.disabled = true;
       } else {
-        button.innerText = "OFF";
-        button.classList.remove("btn-toggle-on");
-        button.classList.add("btn-toggle-off");
-        sendData("ferm" + fermId + "_Status", "OFF");
+        statusButton.innerText = 'OFF';
+        statusButton.classList.remove('btn-toggle-on');
+        statusButton.classList.add('btn-toggle-off');
+        // Enable Cold Crash button when Status is OFF
+        coldCrashButton.disabled = false;
+        sendData(buttonType, "OFF");
       }
     }
+
+    // Toggle Cold Crash button
+    if (buttonType === 'ferm' + fermId + '_ColdCrash' && !coldCrashButton.disabled) {
+      if (coldCrashButton.innerText === 'OFF') {
+        coldCrashButton.innerText = 'ON';
+        coldCrashButton.classList.remove('btn-toggle-off');
+        coldCrashButton.classList.add('btn-toggle-on');
+        statusButton.disabled = true;
+        sendData(buttonType, "ON");
+      } else {
+        coldCrashButton.innerText = 'OFF';
+        coldCrashButton.classList.remove('btn-toggle-on');
+        coldCrashButton.classList.add('btn-toggle-off');
+        statusButton.disabled = false;
+        sendData(buttonType, "OFF");
+      }
+    }
+  }
 
     var updatingSetpoint = false;
 
