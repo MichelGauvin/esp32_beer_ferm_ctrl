@@ -7,10 +7,19 @@
   - Master pump control let the operator to force the pump ON for the desired duration via web command
   - Implement a cold crash process
   - Limiter l'affichage de l'output à 0 décimale.
+  - Reset the PID when it is turn off:
+      PID.SetOutputLimits(0.0, 1.0);  // Forces minimum up to 0.0
+      PID.SetOutputLimits(-1.0, 0.0);  // Forces maximum down to 0.0
+      PID.SetOutputLimits(PIDMinimum, PIDMaximum);  // Set the limits back to normal
+  - Donner la possibilité d'échanger les données via MQTT.
+  - Synchroniser avec NTP la date et l'heure.
+  - Tester ce qui arrive si on perd le Wifi
+  -
 
   BUG:
   - Il y a un bug avec le windows start time, on devrait le resetter lorsqu'on met le PID à "ON"
-  Il est seulement initialisé lors du démarrage de l'application.
+  Il est seulement initialisé lors du démarrage de l'application. Ce bug se produit lorsque la lecture
+  de la température est -127.
 */
 
 #include <OneWire.h>
@@ -46,6 +55,9 @@
 #define EEPROM_ADDR_FERM3STATUS 36
 #define EEPROM_ADDR_FERM4STATUS 38
 
+int EEPROM_ADDR_SETPOINT_OFFSET[4] = {EEPROM_ADDR_SETPOINT1, EEPROM_ADDR_SETPOINT2, EEPROM_ADDR_SETPOINT3, EEPROM_ADDR_SETPOINT4};
+int EEPROM_ADDR_FERMSTATUS_OFFSET[4] = {EEPROM_ADDR_FERM1STATUS, EEPROM_ADDR_FERM2STATUS, EEPROM_ADDR_FERM3STATUS, EEPROM_ADDR_FERM4STATUS};
+
 // const char* ssid = "Michel";
 // const char* password = "Mikego20";
 
@@ -67,7 +79,8 @@ double Kp = 70, Ki = 1, Kd = 0;
 // Gros fermenteur 2 double Kp = 150, Ki = 1, Kd = 0; // J'ai mis le proportionelle a 150 pour le gros fermenteur.
 double Kp2 = 150, Ki2 = 1, Kd2 = 0;
 
-struct Fermenter {
+struct Fermenter
+{
   int fermenterId;
   double setpoint;
   double input;
@@ -101,11 +114,10 @@ struct Fermenter {
 };
 
 Fermenter fermenters[4] = {
-  {1, 0, 0, 0, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}, RELAY1},
-  {2, 0, 0, 0, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}, RELAY2},
-  {3, 0, 0, 0, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92}, RELAY3},
-  {4, 0, 0, 0, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80}, RELAY4}
-};
+    {1, 0, 0, 0, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}, RELAY1},
+    {2, 0, 0, 0, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}, RELAY2},
+    {3, 0, 0, 0, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92}, RELAY3},
+    {4, 0, 0, 0, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80}, RELAY4}};
 
 const int pid_T = 30; // PID computation interval in seconds
 const int WindowSize = 300;
@@ -210,16 +222,16 @@ void setup()
   pinMode(RELAY2, INPUT_PULLUP);
   pinMode(RELAY3, INPUT_PULLUP);
   pinMode(RELAY4, INPUT_PULLUP);
-  //delay(100);
+  // delay(100);
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
   pinMode(RELAY3, OUTPUT);
   pinMode(RELAY4, OUTPUT);
-  for (int i = 0; i < 4; ++i){
+  for (int i = 0; i < 4; ++i)
+  {
     digitalWrite(fermenters[i].relayPin, HIGH);
     fermenters[i].pumpStatus = false;
   }
-
 
   //************************ END RELAY SETUP ******************************
 
@@ -285,31 +297,32 @@ void setup()
     const char* key_value = kv.key().c_str();
     const char* str_value = kv.value().as<const char*>();
 
-      if (strcmp(key_value, "ferm1_Status") == 0) {
-          updateStatus(key_value, str_value, fermenters[0].fermStatus, fermenters[0].output, fermenters[0].pidIntervalCounter, EEPROM_ADDR_FERM1STATUS);
-          digitalWrite(fermenters[0].relayPin, HIGH);
-          fermenters[0].pumpStatus = false;
-      } else if (strcmp(key_value, "ferm1_Setpoint") == 0) {
-          updateSetpoint(key_value, str_value, fermenters[0].setpoint, EEPROM_ADDR_SETPOINT1);
-      } else if (strcmp(key_value, "ferm2_Status") == 0) {
-          updateStatus(key_value, str_value, fermenters[1].fermStatus, fermenters[1].output, fermenters[1].pidIntervalCounter, EEPROM_ADDR_FERM2STATUS);
-          digitalWrite(fermenters[1].relayPin, HIGH);
-          fermenters[1].pumpStatus = false;
-      } else if (strcmp(key_value, "ferm2_Setpoint") == 0) {
-          updateSetpoint(key_value, str_value, fermenters[1].setpoint, EEPROM_ADDR_SETPOINT2);
-      } else if (strcmp(key_value, "ferm3_Status") == 0) {
-          updateStatus(key_value, str_value, fermenters[2].fermStatus, fermenters[2].output, fermenters[2].pidIntervalCounter, EEPROM_ADDR_FERM3STATUS);
-          digitalWrite(fermenters[2].relayPin, HIGH);
-          fermenters[2].pumpStatus = false;
-      } else if (strcmp(key_value, "ferm3_Setpoint") == 0) {
-          updateSetpoint(key_value, str_value, fermenters[2].setpoint, EEPROM_ADDR_SETPOINT3);
-      } else if (strcmp(key_value, "ferm4_Status") == 0) {
-          updateStatus(key_value, str_value, fermenters[3].fermStatus, fermenters[3].output, fermenters[3].pidIntervalCounter, EEPROM_ADDR_FERM4STATUS);
-          digitalWrite(fermenters[3].relayPin, HIGH);
-          fermenters[3].pumpStatus = false;
-      } else if (strcmp(key_value, "ferm4_Setpoint") == 0) {
-          updateSetpoint(key_value, str_value, fermenters[3].setpoint, EEPROM_ADDR_SETPOINT4);
-      }
+    int fermIndex = -1;
+
+    // Determine the fermenter index based on the key_value
+    if (strcmp(key_value, "ferm1_Status") == 0 || strcmp(key_value, "ferm1_Setpoint") == 0) {
+        fermIndex = 0;
+    } else if (strcmp(key_value, "ferm2_Status") == 0 || strcmp(key_value, "ferm2_Setpoint") == 0) {
+        fermIndex = 1;
+    } else if (strcmp(key_value, "ferm3_Status") == 0 || strcmp(key_value, "ferm3_Setpoint") == 0) {
+        fermIndex = 2;
+    } else if (strcmp(key_value, "ferm4_Status") == 0 || strcmp(key_value, "ferm4_Setpoint") == 0) {
+        fermIndex = 3;
+    }
+
+    // If a valid fermenter index is found, process the status or setpoint
+    if (fermIndex != -1) {
+        if (strstr(key_value, "Status") != NULL) {
+			// If we start or stop the fermenter we set the pump to OFF, the code will determine the later state
+			// This allows us to stop the pump immediately when we stop the fermenter.
+            updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, EEPROM_ADDR_FERM1STATUS + fermIndex * EEPROM_ADDR_FERMSTATUS_OFFSET[fermIndex]);
+            digitalWrite(fermenters[fermIndex].relayPin, HIGH);
+            fermenters[fermIndex].pumpStatus = false;
+        } else if (strstr(key_value, "Setpoint") != NULL) {
+            updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, EEPROM_ADDR_SETPOINT1 + fermIndex * EEPROM_ADDR_SETPOINT_OFFSET[fermIndex]);
+        }
+    }
+
     }
     
     request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"JSON data received\"}"); });
@@ -319,23 +332,24 @@ void setup()
 
   //************************ PID SETUP ********************************
   // Restore setpoints and status from EEPROM
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < 4; ++i)
+  {
     EEPROM.get(EEPROM_ADDR_SETPOINT1 + (i * 8), fermenters[i].setpoint);
     EEPROM.get(EEPROM_ADDR_FERM1STATUS + (i * 2), fermenters[i].fermStatus);
   }
 
-  for (auto& fermenter : fermenters) {
+  for (auto &fermenter : fermenters)
+  {
     fermenter.pid.SetMode(AUTOMATIC);
     fermenter.windowStartTime = millis();
   }
 
   // Tell the PID to range between 0 and the full window size
-  fermenters[0].pid.SetOutputLimits(0, WindowSize / 1); // Limit maximum Ferm1_Output to 30 seconds every 5 minutes
+  fermenters[0].pid.SetOutputLimits(0, WindowSize / 1);  // Limit maximum Ferm1_Output to 30 seconds every 5 minutes
   fermenters[1].pid.SetOutputLimits(0, WindowSize / 1);  // Limit maximum Ferm2_Output to 300 seconds every 5 minutes
   fermenters[2].pid.SetOutputLimits(0, WindowSize / 10); // Limit maximum Ferm3_Output to 30 seconds every 5 minutes
   fermenters[3].pid.SetOutputLimits(0, WindowSize / 10); // Limit maximum Ferm4_Output to 30 seconds every 5 minutes
 
-  
   //************************ END PID SETUP*****************************
 
   //************************ TEMPERATURE READING SETUP ********************
@@ -356,7 +370,8 @@ void setup()
 // Function to update next pump cycle time
 void updateNextPumpCycleTime()
 {
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < 4; ++i)
+  {
     if (fermenters[i].fermStatus == true)
     {
       fermenters[i].nextPumpCycleTime = ((WindowSize * 1000 - (millis() - fermenters[i].windowStartTime))) / 1000;
@@ -372,10 +387,13 @@ void updateNextPumpCycleTime()
 // Function to handle the PID loop for a fermenter
 void handleFermenterPIDLoop()
 {
-  for (int i = 0; i < 4; ++i) {
-    if (fermenters[i].fermStatus) {
-          
-      if (fermenters[i].input != -127) {
+  for (int i = 0; i < 4; ++i)
+  {
+    if (fermenters[i].fermStatus)
+    {
+
+      if (fermenters[i].input != -127)
+      {
         fermenters[i].input = fermenters[i].movingAvg.push(fermenters[i].input).get();
 
         // Compute PID output only every 30 seconds
@@ -413,11 +431,10 @@ void handleFermenterPIDLoop()
     else
     {
       fermenters[i].windowStartTime = millis();
-      //I need to find a way to managed the Next Pump Cycle Time when the temp reading is -127.
+      // I need to find a way to managed the Next Pump Cycle Time when the temp reading is -127.
     }
   }
 }
-
 
 void loop()
 {
@@ -426,7 +443,7 @@ void loop()
   while ((currentMillis - previousMillis) < interval)
   {
     // The code in this while loop executes between two temperatures measurements.
-    
+
     // Handle WebSocket events
     webSocket.loop();
 
@@ -445,7 +462,7 @@ void loop()
 
   // Calling requestTemperatures() here makes sure we leave enough time for the temperature conversion (1 second).
   sensors.requestTemperatures();
-  
+
   // Execute all fermenters pid
   handleFermenterPIDLoop();
 
