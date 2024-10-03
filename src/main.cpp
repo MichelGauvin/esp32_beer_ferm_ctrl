@@ -14,7 +14,6 @@
   - Donner la possibilité d'échanger les données via MQTT.
   - Synchroniser avec NTP la date et l'heure.
   - Tester ce qui arrive si on perd le Wifi
-  -
 
   BUG:
   - Il y a un bug avec le windows start time, on devrait le resetter lorsqu'on met le PID à "ON"
@@ -182,13 +181,13 @@ void setPumpColdCrash(const char *str_value, bool &coldCrash, uint8_t relayPin, 
   if (strcmp(str_value, "ON") == 0)
   {
     coldCrash = true;
-    digitalWrite(relayPin, LOW);
+    digitalWrite(relayPin, HIGH);
     fermenters[fermIndex].pumpStatus = true;
   }
   else
   {
     coldCrash = false;
-    digitalWrite(relayPin, HIGH);
+    digitalWrite(relayPin, LOW);
     fermenters[fermIndex].pumpStatus = false;
   }
 }
@@ -240,7 +239,7 @@ void setup()
 {
   //************************ RELAY SETUP ******************************
   // We need to configure the pinMode to Ferm1_Input_PULLUP first
-  // It avoids having a HIGH state when configuring the pinMode to Ferm1_Output.
+  // It avoids having a LOW state when configuring the pinMode to Ferm1_Output.
   // IMPORTANT: WE INVERSE THE RELAY LOGIC BY DOING THIS
   // Issue #3 mikesbrewshop.com
   pinMode(RELAY1, INPUT_PULLUP);
@@ -254,7 +253,7 @@ void setup()
   pinMode(RELAY4, OUTPUT);
   for (int i = 0; i < 4; ++i)
   {
-    digitalWrite(fermenters[i].relayPin, HIGH);
+    digitalWrite(fermenters[i].relayPin, LOW);
     fermenters[i].pumpStatus = false;
   }
 
@@ -340,7 +339,7 @@ void setup()
       // If we start or stop the fermenter we set the pump to OFF, the code will determine the later state
       // This allows us to stop the pump immediately when we stop the fermenter.
             updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, EEPROM_ADDR_FERMSTATUS[fermIndex]);
-            digitalWrite(fermenters[fermIndex].relayPin, HIGH);
+            digitalWrite(fermenters[fermIndex].relayPin, LOW);
             fermenters[fermIndex].pumpStatus = false;
         } else if (strstr(key_value, "Setpoint") != NULL) {
             updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, EEPROM_ADDR_SETPOINT[fermIndex]);
@@ -371,9 +370,9 @@ void setup()
   }
 
   // Tell the PID to range between 0 and the full window size
-  fermenters[0].pid.SetOutputLimits(0, WindowSize / 1);  // Limit maximum Ferm1_Output to 30 seconds every 5 minutes
+  fermenters[0].pid.SetOutputLimits(0, WindowSize / 10);  // Limit maximum Ferm1_Output to 30 seconds every 5 minutes
   fermenters[1].pid.SetOutputLimits(0, WindowSize / 1);  // Limit maximum Ferm2_Output to 300 seconds every 5 minutes
-  fermenters[2].pid.SetOutputLimits(0, WindowSize / 10); // Limit maximum Ferm3_Output to 30 seconds every 5 minutes
+  fermenters[2].pid.SetOutputLimits(0, WindowSize / 1); // Limit maximum Ferm3_Output to 30 seconds every 5 minutes
   fermenters[3].pid.SetOutputLimits(0, WindowSize / 10); // Limit maximum Ferm4_Output to 30 seconds every 5 minutes
 
   //************************ END PID SETUP*****************************
@@ -444,12 +443,12 @@ void handleFermenterPIDLoop()
         }
         if (fermenters[i].output * 1000 < millis() - fermenters[i].windowStartTime)
         {
-          digitalWrite(fermenters[i].relayPin, HIGH);
+          digitalWrite(fermenters[i].relayPin, LOW);
           fermenters[i].pumpStatus = false;
         }
         else
         {
-          digitalWrite(fermenters[i].relayPin, LOW);
+          digitalWrite(fermenters[i].relayPin, HIGH);
           fermenters[i].pumpStatus = true;
         }
       }
