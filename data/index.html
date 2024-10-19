@@ -56,7 +56,7 @@
     }
 
     .box {
-      border: 1px solid #181b0f;
+      border: 1px solid #145575;
       padding: 15px;
       border-radius: 5px;
       margin-bottom: 20px;
@@ -64,31 +64,31 @@
 
     /* Fermenter box colors */
     .fermenter1-box {
-      border: 1px solid #0f3f88;
+      border: 1px solid #145575;
       padding: 10px;
       border-radius: 5px;
       margin-top: 10px;
     }
 
     .fermenter2-box {
-      border: 1px solid #198754;
-      padding: 15px;
+      border: 1px solid #3d6139;
+      padding: 10px;
       border-radius: 5px;
-      margin-bottom: 20px;
+      margin-top: 10px;
     }
 
     .fermenter3-box {
-      border: 1px solid #d9534f;
-      padding: 15px;
+      border: 1px solid #a39a46;
+      padding: 10px;
       border-radius: 5px;
-      margin-bottom: 20px;
+      margin-top: 10px;
     }
 
     .fermenter4-box {
-      border: 1px solid #f0ad4e;
-      padding: 15px;
+      border: 1px solid #a03e32;
+      padding: 10px;
       border-radius: 5px;
-      margin-bottom: 20px;
+      margin-top: 10px;
     }
 
     .box-header {
@@ -120,34 +120,34 @@
 
     /* Fermenter header colors */
     .fermenter1-header {
-      background-color: #0f3f88;
+      background-color: #145575;
       /* Blue */
     }
 
     .fermenter2-header {
-      background-color: #198754;
+      background-color: #3d6139;
       /* Green */
     }
 
     .fermenter3-header {
-      background-color: #d9534f;
+      background-color: #a39a46;
       /* Red */
     }
 
     .fermenter4-header {
-      background-color: #f0ad4e;
+      background-color: #a03e32;
       /* Orange */
     }
   </style>
 </head>
 
-<body>
+<body class="bg-dark text-white">
   <div class="container">
     <h2>Mikes Brew Shop - Fermenter Control</h2>
     <div class="row">
       <!-- Fermenter 1 -->
       <div class="col-lg-3 col-md-6">
-        <div class="fermenter1-box ">
+        <div class="fermenter1-box">
           <div class="box-header  fermenter1-header text-center">
             <span class="box-title d-block fs-5">Fermenter 1</span>
           </div>
@@ -190,14 +190,21 @@
             <div class="box-body">
               <div class="row">
                 <div class="col-md-12">
-                  <div id="tc1TempC1" class="mb-3 fw-bold" style="font-size: 1.2rem; ">Temperature: Waiting
-                    for updates...</div>
-                  <div id="setpoint1" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
-                    updates...</div>
-                  <div id="output1" class="mb-3">Output: Waiting for updates...</div>
-                  <div id="nextPumpCycleTime1" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
-                  <div id="pumpStatus1" class="mb-3">Pump Status: Waiting for updates...</div>
-                  <div id="fermStatus1" class="mb-3">Ferm Status: Waiting for updates...</div>
+                  <div>
+                    <span id="tc1TempC1" class="mb-1 fw-bold">Temperature: Waiting for updates..</span><span id="tc1TempC1_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="setpoint1" class="mb-1 fw-bold">Setpoint: Waiting for updates...</span><span id="setpoint1_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="output1" class="mb-1">Output: Waiting for updates...</span><span id="output1_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="nextPumpCycleTime1" class="mb-1">Next Pump Cycle Time: Waiting for updates...</span><span id="nextPumpCycleTime1_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="pumpStatus1" class="mb-1">Pump Status: Waiting for updates...</span><span id="pumpStatus1_value" class="float-end"></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -208,36 +215,38 @@
       <div class="col-lg-3 col-md-6">
         <div class="fermenter2-box">
           <div class="box-header  fermenter2-header text-center">
-            <span class="box-title fs-5">Fermenter 2</span>
+            <span class="box-title d-block fs-5">Fermenter 2</span>
           </div>
-          </br>
           <div class="fermenter2-box">
             <div class="box-header fermenter2-header text-center">
               <span class="box-title fs-6">Controls</span>
             </div>
             <div class="box-body">
-              <form id="form2">
-                <div class="mb-3 d-flex">
-                  <div class="d-flex flex-column me-2">
+              <form id="form1">
+                <div class="mb-1 d-flex container p-0">
+                  <!-- Status Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
                     <label for="ferm2_Status" class="form-label">Status</label>
                     <button type="button" id="ferm2_Status" name="ferm2_Status" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(2, 'ferm2_Status')">OFF</button>
                   </div>
-                  <div class="d-flex flex-column">
-                    <label for="ferm2_ColdCrash" class="form-label">Cold Crash</label>
+              
+                  <!-- Cold Crash Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
+                    <label for="ferm2_ColdCrash" class="form-label">Cold</label>
                     <button type="button" id="ferm2_ColdCrash" name="ferm2_ColdCrash" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(2, 'ferm2_ColdCrash')">OFF</button>
                   </div>
-                </div>
-                <div class="mb-3 row">
-                  <label for="ferm2_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
-                  <div class="col-sm-8">
+              
+                  <!-- Setpoint Input -->
+                  <div class="d-flex flex-column align-items-center p-0">
+                    <label for="ferm2_Setpoint" class="form-label">Setpoint</label>
                     <input type="number" step="0.01" min="0" max="40" id="ferm2_Setpoint" name="ferm2_Setpoint"
-                      class="form-control" oninput="setpointInputChanged(this.value, 2)" onblur="setpointInputBlur()">
+                      class="form-control h-75" style="width: 85px;" oninput="setpointInputChanged(this.value, 2)" onblur="setpointInputBlur()">
                   </div>
                 </div>
               </form>
-              <div id="form2-response"></div>
+              <div id="form1-response"></div>
             </div>
           </div>
           <div class="fermenter2-box">
@@ -245,16 +254,23 @@
               <span class="box-title fs-6">Readings</span>
             </div>
             <div class="box-body">
-              <div class="row mb-3">
+              <div class="row">
                 <div class="col-md-12">
-                  <div id="tc1TempC2" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
-                    for updates...</div>
-                  <div id="setpoint2" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
-                    updates...</div>
-                  <div id="output2" class="mb-3">Output: Waiting for updates...</div>
-                  <div id="nextPumpCycleTime2" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
-                  <div id="pumpStatus2" class="mb-3">Pump Status: Waiting for updates...</div>
-                  <div id="fermStatus2" class="mb-3">Ferm Status: Waiting for updates...</div>
+                  <div>
+                    <span id="tc1TempC2" class="mb-1 fw-bold">Temperature: Waiting for updates..</span><span id="tc1TempC2_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="setpoint2" class="mb-1 fw-bold">Setpoint: Waiting for updates...</span><span id="setpoint2_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="output2" class="mb-1">Output: Waiting for updates...</span><span id="output2_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="nextPumpCycleTime2" class="mb-1">Next Pump Cycle Time: Waiting for updates...</span><span id="nextPumpCycleTime2_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="pumpStatus2" class="mb-1">Pump Status: Waiting for updates...</span><span id="pumpStatus2_value" class="float-end"></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -265,36 +281,38 @@
       <div class="col-lg-3 col-md-6">
         <div class="fermenter3-box">
           <div class="box-header  fermenter3-header text-center">
-            <span class="box-title fs-5">Fermenter 3</span>
+            <span class="box-title d-block fs-5">Fermenter 3</span>
           </div>
-          </br>
           <div class="fermenter3-box">
             <div class="box-header fermenter3-header text-center">
               <span class="box-title fs-6">Controls</span>
             </div>
             <div class="box-body">
-              <form id="form3">
-                <div class="mb-3 d-flex">
-                  <div class="d-flex flex-column me-2">
+              <form id="form1">
+                <div class="mb-1 d-flex container p-0">
+                  <!-- Status Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
                     <label for="ferm3_Status" class="form-label">Status</label>
                     <button type="button" id="ferm3_Status" name="ferm3_Status" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(3, 'ferm3_Status')">OFF</button>
                   </div>
-                  <div class="d-flex flex-column">
-                    <label for="ferm3_ColdCrash" class="form-label">Cold Crash</label>
+              
+                  <!-- Cold Crash Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
+                    <label for="ferm3_ColdCrash" class="form-label">Cold</label>
                     <button type="button" id="ferm3_ColdCrash" name="ferm3_ColdCrash" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(3, 'ferm3_ColdCrash')">OFF</button>
                   </div>
-                </div>
-                <div class="mb-3 row">
-                  <label for="ferm3_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
-                  <div class="col-sm-8">
+              
+                  <!-- Setpoint Input -->
+                  <div class="d-flex flex-column align-items-center p-0">
+                    <label for="ferm3_Setpoint" class="form-label">Setpoint</label>
                     <input type="number" step="0.01" min="0" max="40" id="ferm3_Setpoint" name="ferm3_Setpoint"
-                      class="form-control" oninput="setpointInputChanged(this.value, 3)" onblur="setpointInputBlur()">
+                      class="form-control h-75" style="width: 85px;" oninput="setpointInputChanged(this.value, 3)" onblur="setpointInputBlur()">
                   </div>
                 </div>
               </form>
-              <div id="form3-response"></div>
+              <div id="form1-response"></div>
             </div>
           </div>
           <div class="fermenter3-box">
@@ -302,16 +320,23 @@
               <span class="box-title fs-6">Readings</span>
             </div>
             <div class="box-body">
-              <div class="row mb-3">
+              <div class="row">
                 <div class="col-md-12">
-                  <div id="tc1TempC3" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
-                    for updates...</div>
-                  <div id="setpoint3" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
-                    updates...</div>
-                  <div id="output3" class="mb-3">Output: Waiting for updates...</div>
-                  <div id="nextPumpCycleTime3" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
-                  <div id="pumpStatus3" class="mb-3">Pump Status: Waiting for updates...</div>
-                  <div id="fermStatus3" class="mb-3">Ferm Status: Waiting for updates...</div>
+                  <div>
+                    <span id="tc1TempC3" class="mb-1 fw-bold">Temperature: Waiting for updates..</span><span id="tc1TempC3_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="setpoint3" class="mb-1 fw-bold">Setpoint: Waiting for updates...</span><span id="setpoint3_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="output3" class="mb-1">Output: Waiting for updates...</span><span id="output3_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="nextPumpCycleTime3" class="mb-1">Next Pump Cycle Time: Waiting for updates...</span><span id="nextPumpCycleTime3_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="pumpStatus3" class="mb-1">Pump Status: Waiting for updates...</span><span id="pumpStatus3_value" class="float-end"></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -322,36 +347,38 @@
       <div class="col-lg-3 col-md-6">
         <div class="fermenter4-box">
           <div class="box-header  fermenter4-header text-center">
-            <span class="box-title fs-5">Fermenter 4</span>
+            <span class="box-title d-block fs-5">Fermenter 4</span>
           </div>
-          </br>
           <div class="fermenter4-box">
             <div class="box-header fermenter4-header text-center">
               <span class="box-title fs-6">Controls</span>
             </div>
             <div class="box-body">
-              <form id="form4">
-                <div class="mb-3 d-flex">
-                  <div class="d-flex flex-column me-2">
+              <form id="form1">
+                <div class="mb-1 d-flex container p-0">
+                  <!-- Status Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
                     <label for="ferm4_Status" class="form-label">Status</label>
                     <button type="button" id="ferm4_Status" name="ferm4_Status" class="btn btn-toggle-off btn-lg"
-                      onclick="toggleButton(4,'ferm4_Status')">OFF</button>
+                      onclick="toggleButton(4, 'ferm4_Status')">OFF</button>
                   </div>
-                  <div class="d-flex flex-column">
-                    <label for="ferm4_ColdCrash" class="form-label">Cold Crash</label>
+              
+                  <!-- Cold Crash Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
+                    <label for="ferm4_ColdCrash" class="form-label">Cold</label>
                     <button type="button" id="ferm4_ColdCrash" name="ferm4_ColdCrash" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(4, 'ferm4_ColdCrash')">OFF</button>
                   </div>
-                </div>
-                <div class="mb-3 row">
-                  <label for="ferm4_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
-                  <div class="col-sm-8">
+              
+                  <!-- Setpoint Input -->
+                  <div class="d-flex flex-column align-items-center p-0">
+                    <label for="ferm4_Setpoint" class="form-label">Setpoint</label>
                     <input type="number" step="0.01" min="0" max="40" id="ferm4_Setpoint" name="ferm4_Setpoint"
-                      class="form-control" oninput="setpointInputChanged(this.value, 4)" onblur="setpointInputBlur()">
+                      class="form-control h-75" style="width: 85px;" oninput="setpointInputChanged(this.value, 4)" onblur="setpointInputBlur()">
                   </div>
                 </div>
               </form>
-              <div id="form4-response"></div>
+              <div id="form1-response"></div>
             </div>
           </div>
           <div class="fermenter4-box">
@@ -359,16 +386,23 @@
               <span class="box-title fs-6">Readings</span>
             </div>
             <div class="box-body">
-              <div class="row mb-3">
+              <div class="row">
                 <div class="col-md-12">
-                  <div id="tc1TempC4" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
-                    for updates...</div>
-                  <div id="setpoint4" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
-                    updates...</div>
-                  <div id="output4" class="mb-3">Output: Waiting for updates...</div>
-                  <div id="nextPumpCycleTime4" class="mb-3">Next Pump Cycle Time: Waiting for updates...</div>
-                  <div id="pumpStatus4" class="mb-3">Pump Status: Waiting for updates...</div>
-                  <div id="fermStatus4" class="mb-3">Ferm Status: Waiting for updates...</div>
+                  <div>
+                    <span id="tc1TempC4" class="mb-1 fw-bold">Temperature: Waiting for updates..</span><span id="tc1TempC4_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="setpoint4" class="mb-1 fw-bold">Setpoint: Waiting for updates...</span><span id="setpoint4_value" class="float-end fw-bold"></span>
+                  </div>
+                  <div>
+                    <span id="output4" class="mb-1">Output: Waiting for updates...</span><span id="output4_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="nextPumpCycleTime4" class="mb-1">Next Pump Cycle Time: Waiting for updates...</span><span id="nextPumpCycleTime4_value" class="float-end"></span>
+                  </div>
+                  <div>
+                    <span id="pumpStatus4" class="mb-1">Pump Status: Waiting for updates...</span><span id="pumpStatus4_value" class="float-end"></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -438,12 +472,16 @@
         lfermColdcrash = "OFF";
       }
 
-      document.getElementById('setpoint' + fermId).innerText = 'Setpoint: ' + data['setpoint'].toFixed(2) + " °C";
-      document.getElementById('tc1TempC' + fermId).innerText = 'Temp: ' + data['tc1TempC'].toFixed(2) + " °C";
-      document.getElementById('output' + fermId).innerText = 'Output: ' + data['output'].toFixed(0) + " sec";
-      document.getElementById('nextPumpCycleTime' + fermId).innerText = 'Next Pump Cycle Time: ' + data['nextPumpCycleTime'] + " sec";
-      document.getElementById('pumpStatus' + fermId).innerText = 'Pump Status: ' + lpumpStatus;
-      document.getElementById('fermStatus' + fermId).innerText = 'Ferm Status: ' + lfermStatus;
+      document.getElementById('tc1TempC' + fermId).innerText = 'Temperature: ';
+      document.getElementById('tc1TempC' + fermId + '_value').innerText = data['tc1TempC'].toFixed(2) + " °C";
+      document.getElementById('setpoint' + fermId).innerText = 'Setpoint:';
+      document.getElementById('setpoint' + fermId + '_value').innerText = data['setpoint'].toFixed(2) + " °C";
+      document.getElementById('output' + fermId).innerText = 'Output: ';
+      document.getElementById('output' + fermId + '_value').innerText = data['output'].toFixed(0) + " sec";
+      document.getElementById('nextPumpCycleTime' + fermId).innerText = 'Next Pump Cycle Time: ';
+      document.getElementById('nextPumpCycleTime' + fermId + '_value').innerText = data['nextPumpCycleTime'] + " sec";
+      document.getElementById('pumpStatus' + fermId).innerText = 'Pump Status: ';
+      document.getElementById('pumpStatus' + fermId + '_value').innerText = lpumpStatus;
 
       // Update form inputs with server values
       if (!updatingSetpoint) {
