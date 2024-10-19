@@ -17,14 +17,13 @@
     crossorigin="anonymous"></script>
   <style>
     body {
-      margin: 20px;
+      margin: 5px;
       font-family: Arial, sans-serif;
       background-color: #f8f9fa;
     }
 
-    .container {
+    .container-fluid {
       background-color: #fff;
-      padding: 20px;
       border-radius: 8px;
       box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
     }
@@ -36,7 +35,7 @@
     }
 
     .form-control {
-      border: 2px solid #0f3f88;
+      border: 2px solid #7097d1;
     }
 
     .btn-toggle-on {
@@ -66,9 +65,9 @@
     /* Fermenter box colors */
     .fermenter1-box {
       border: 1px solid #0f3f88;
-      padding: 15px;
+      padding: 10px;
       border-radius: 5px;
-      margin-bottom: 20px;
+      margin-top: 10px;
     }
 
     .fermenter2-box {
@@ -94,7 +93,7 @@
 
     .box-header {
       color: white;
-      padding: 1px;
+      padding: 2px;
       border-top-left-radius: 7px;
       border-top-right-radius: 7px;
       border-bottom-left-radius: 7px;
@@ -148,34 +147,36 @@
     <div class="row">
       <!-- Fermenter 1 -->
       <div class="col-lg-3 col-md-6">
-        <div class="fermenter1-box">
-          <div class="box-header text-center fermenter1-header">
-            <h5 class="box-title">Fermenter 1</h5>
+        <div class="fermenter1-box ">
+          <div class="box-header  fermenter1-header text-center">
+            <span class="box-title d-block fs-5">Fermenter 1</span>
           </div>
-          </br>
           <div class="fermenter1-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter1-header">Controls</h5>
+            <div class="box-header fermenter1-header text-center">
+              <span class="box-title fs-6">Controls</span>
             </div>
             <div class="box-body">
               <form id="form1">
-                <div class="mb-3 d-flex">
-                  <div class="d-flex flex-column me-2">
+                <div class="mb-1 d-flex container p-0">
+                  <!-- Status Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
                     <label for="ferm1_Status" class="form-label">Status</label>
                     <button type="button" id="ferm1_Status" name="ferm1_Status" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(1, 'ferm1_Status')">OFF</button>
                   </div>
-                  <div class="d-flex flex-column">
-                    <label for="ferm1_ColdCrash" class="form-label">Cold Crash</label>
+              
+                  <!-- Cold Crash Button -->
+                  <div class="d-flex flex-column align-items-center me-3">
+                    <label for="ferm1_ColdCrash" class="form-label">Cold</label>
                     <button type="button" id="ferm1_ColdCrash" name="ferm1_ColdCrash" class="btn btn-toggle-off btn-lg"
                       onclick="toggleButton(1, 'ferm1_ColdCrash')">OFF</button>
                   </div>
-                </div>
-                <div class="mb-3 row">
-                  <label for="ferm1_Setpoint" class="col-sm-4 col-form-label">Setpoint</label>
-                  <div class="col-sm-8">
+              
+                  <!-- Setpoint Input -->
+                  <div class="d-flex flex-column align-items-center p-0">
+                    <label for="ferm1_Setpoint" class="form-label">Setpoint</label>
                     <input type="number" step="0.01" min="0" max="40" id="ferm1_Setpoint" name="ferm1_Setpoint"
-                      class="form-control" oninput="setpointInputChanged(this.value, 1)" onblur="setpointInputBlur()">
+                      class="form-control h-75" style="width: 85px;" oninput="setpointInputChanged(this.value, 1)" onblur="setpointInputBlur()">
                   </div>
                 </div>
               </form>
@@ -183,13 +184,13 @@
             </div>
           </div>
           <div class="fermenter1-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter1-header">Readings</h5>
+            <div class="box-header fermenter1-header text-center">
+              <span class="box-title fs-6">Readings</span>
             </div>
             <div class="box-body">
-              <div class="row mb-3">
+              <div class="row">
                 <div class="col-md-12">
-                  <div id="tc1TempC1" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Temperature: Waiting
+                  <div id="tc1TempC1" class="mb-3 fw-bold" style="font-size: 1.2rem; ">Temperature: Waiting
                     for updates...</div>
                   <div id="setpoint1" class="mb-3" style="font-size: 1.2rem; font-weight: bold;">Setpoint: Waiting for
                     updates...</div>
@@ -206,13 +207,13 @@
       <!-- Fermenter 2 -->
       <div class="col-lg-3 col-md-6">
         <div class="fermenter2-box">
-          <div class="box-header text-center fermenter2-header">
-            <h5 class="box-title">Fermenter 2</h5>
+          <div class="box-header  fermenter2-header text-center">
+            <span class="box-title fs-5">Fermenter 2</span>
           </div>
           </br>
           <div class="fermenter2-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter2-header">Controls</h5>
+            <div class="box-header fermenter2-header text-center">
+              <span class="box-title fs-6">Controls</span>
             </div>
             <div class="box-body">
               <form id="form2">
@@ -240,8 +241,8 @@
             </div>
           </div>
           <div class="fermenter2-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter2-header">Readings</h5>
+            <div class="box-header fermenter2-header text-center">
+              <span class="box-title fs-6">Readings</span>
             </div>
             <div class="box-body">
               <div class="row mb-3">
@@ -263,13 +264,13 @@
       <!-- Fermenter 3 -->
       <div class="col-lg-3 col-md-6">
         <div class="fermenter3-box">
-          <div class="box-header text-center fermenter3-header">
-            <h5 class="box-title">Fermenter 3</h5>
+          <div class="box-header  fermenter3-header text-center">
+            <span class="box-title fs-5">Fermenter 3</span>
           </div>
           </br>
           <div class="fermenter3-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter3-header">Controls</h5>
+            <div class="box-header fermenter3-header text-center">
+              <span class="box-title fs-6">Controls</span>
             </div>
             <div class="box-body">
               <form id="form3">
@@ -297,8 +298,8 @@
             </div>
           </div>
           <div class="fermenter3-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter3-header">Readings</h5>
+            <div class="box-header fermenter3-header text-center">
+              <span class="box-title fs-6">Readings</span>
             </div>
             <div class="box-body">
               <div class="row mb-3">
@@ -320,13 +321,13 @@
       <!-- Fermenter 4 -->
       <div class="col-lg-3 col-md-6">
         <div class="fermenter4-box">
-          <div class="box-header text-center fermenter4-header">
-            <h5 class="box-title">Fermenter 4</h5>
+          <div class="box-header  fermenter4-header text-center">
+            <span class="box-title fs-5">Fermenter 4</span>
           </div>
           </br>
           <div class="fermenter4-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter4-header">Controls</h5>
+            <div class="box-header fermenter4-header text-center">
+              <span class="box-title fs-6">Controls</span>
             </div>
             <div class="box-body">
               <form id="form4">
@@ -354,8 +355,8 @@
             </div>
           </div>
           <div class="fermenter4-box">
-            <div class="box-header">
-              <h5 class="box-title fermenter4-header">Readings</h5>
+            <div class="box-header fermenter4-header text-center">
+              <span class="box-title fs-6">Readings</span>
             </div>
             <div class="box-body">
               <div class="row mb-3">
