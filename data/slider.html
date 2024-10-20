@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,12 +12,14 @@
             background-color: #282c34;
             color: white;
         }
+
         .slider-container {
             position: relative;
             width: 100%;
             height: 15px;
             margin-bottom: 40px;
         }
+
         .slider-background {
             position: absolute;
             width: 100%;
@@ -24,12 +27,15 @@
             background: #ddd;
             border-radius: 5px;
         }
+
         .slider-fill {
             position: absolute;
             height: 100%;
             background: #468d2a;
             border-radius: 5px;
+            width: 0%; /* Initially set to 0% */
         }
+
         .slider {
             -webkit-appearance: none;
             position: absolute;
@@ -39,9 +45,11 @@
             outline: none;
             z-index: 1;
         }
+
         .slider:hover {
             opacity: 1;
         }
+
         .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -50,20 +58,25 @@
             background: #e20707;
             cursor: pointer;
         }
+
         .slider::-moz-range-thumb {
             width: 25px;
             height: 25px;
             background: #fff;
             cursor: pointer;
         }
+
         .equalizer {
             padding: 20px;
         }
+
         .slider-value {
             text-align: center;
             margin-top: 10px;
         }
-        .slider-background::after, .slider-fill::after {
+
+        .slider-background::after,
+        .slider-fill::after {
             content: attr(data-text);
             position: absolute;
             top: 0px;
@@ -72,68 +85,67 @@
             color: white;
             font-size: 12px;
         }
+
         .slider-fill::after {
             color: white;
         }
     </style>
 </head>
+
 <body>
 
-<div class="container equalizer">
-    <div class="row">
-        <div class="col">
-            <div class="slider-container">
-                <div class="slider-background">
-                    <div class="slider-fill" id="slider1-fill"></div>
+    <div class="container equalizer">
+        <div class="row">
+            <div class="col">
+                <div class="slider-container">
+                    <div class="slider-background">
+                        <div class="slider-fill" id="slider1-fill"></div>
+                    </div>
+                    <input type="range" min="1" max="300" value="300" class="slider" id="slider1" disabled>
                 </div>
-                <input type="range" min="1" max="300" value="300" class="slider" id="slider1">
             </div>
-            <p class="slider-value">Value: <span id="value1">10</span></p>
         </div>
     </div>
-</div>
 
-<!-- Bootstrap and jQuery -->
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Bootstrap and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-<script>
-    $(document).ready(function(){
-        // Example function to fetch values from the server
-        function fetchValuesFromServer() {
-            return new Promise((resolve) => {
-                // Simulate a server response
-                setTimeout(() => {
-                    resolve({
-                        slider1: 10
-                    });
-                }, 1000);
-            });
+    <script>
+        // WebSocket connection for all fermenters
+        const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
+
+        ws.onopen = function () {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            const fermenterId = data['fermenterId'];
+            updateSliderData(fermenterId, data);
+        };
+
+        ws.onclose = function () {
+            console.log('WebSocket connection closed');
+        };
+
+        ws.onerror = function (error) {
+            console.log('WebSocket error: ', error);
+        };
+
+        // Function to update the slider fill and value
+        function updateSliderData(fermenterId, data) {
+            const output = data['output'].toFixed(0);
+            const nextPumpCycleTime = 300 - data['nextPumpCycleTime'];
+            // Update the slider fill
+            const percentage = (output / 300) * 100; // Convert output to percentage
+            $("#slider" + fermenterId + "-fill").css('width', percentage + '%');
+            // Update the slider value (nextPumpCycleTime)
+            $("#slider" + fermenterId).val(nextPumpCycleTime);
         }
-
-        // Function to update the slider fill based on value
-        function updateSliderFill(sliderId, value) {
-            var percentage = value + "%";
-            $("#" + sliderId + "-fill").css('width', percentage);
-        }
-
-        // Fetch values from the server and update sliders
-        fetchValuesFromServer().then((data) => {
-            for (var sliderId in data) {
-                var value = data[sliderId];
-                updateSliderFill(sliderId, value);
-            }
-        });
-
-        // Update the current slider value (each time you drag the slider handle)
-        $(".slider").on("input", function() {
-            var sliderId = $(this).attr("id");
-            var value = $(this).val();
-            $("#value" + sliderId.slice(-1)).text(value);
-        });
-    });
-</script>
+    </script>
 
 </body>
+
 </html>
