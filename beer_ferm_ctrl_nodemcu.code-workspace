@@ -1,9 +1,15 @@
 {
 	"folders": [
 		{
-			"name": "beer_ferm_ctrl_nodemcu",
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"*.tcc": "cpp",
+			"optional": "cpp",
+			"system_error": "cpp",
+			"regex": "cpp"
+		}
+	}
 }
