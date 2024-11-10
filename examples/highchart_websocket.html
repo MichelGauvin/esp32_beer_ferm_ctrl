@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Highcharts with WebSocket Data</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/series-label.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+</head>
+<body>
+
+<div id="container" style="width: 100%; height: 400px;"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize the chart
+        var chart = Highcharts.chart('container', {
+            chart: {
+                type: 'spline',
+                animation: Highcharts.svg, // Don't animate in old IE
+                marginRight: 10,
+                events: {
+                    load: function () {
+                        // Set up WebSocket connection here
+                        var series = this.series[0];
+                        var ws = new WebSocket('wss://your-websocket-server-url');
+
+                        ws.onopen = function () {
+                            console.log('WebSocket connection opened');
+                        };
+
+                        ws.onmessage = function (event) {
+                            var data = JSON.parse(event.data);
+                            // Assuming data contains a timestamp and a value
+                            var x = data.timestamp; // time in milliseconds
+                            var y = data.value; // the value
+
+                            // Add the point to the chart
+                            series.addPoint([x, y], true, true);
+                        };
+
+                        ws.onclose = function () {
+                            console.log('WebSocket connection closed');
+                        };
+
+                        ws.onerror = function (error) {
+                            console.error('WebSocket error:', error);
+                        };
+                    }
+                }
+            },
+            title: {
+                text: 'Live WebSocket Data'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150
+            },
+            yAxis: {
+                title: {
+                    text: 'Value'
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#808080'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+                        Highcharts.numberFormat(this.y, 2);
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            exporting: {
+                enabled: true
+            },
+            series: [{
+                name: 'Real-time data',
+                data: (function () {
+                    // Generate an array of empty data
+                    var data = [],
+                        time = (new Date()).getTime(),
+                        i;
+                    for (i = -19; i <= 0; i += 1) {
+                        data.push({
+                            x: time + i * 1000,
+                            y: null // empty values initially
+                        });
+                    }
+                    return data;
+                }())
+            }]
+        });
+    });
+/* Key Changes for WebSocket Support:
+WebSocket Setup: A WebSocket connection is established inside the load event of the chart. Replace 'wss://your-websocket-server-url' with your actual WebSocket server URL.
+
+Handling Incoming Data:
+
+1. The onmessage event listens for incoming WebSocket data. When new data arrives, it is parsed (assuming it’s JSON format).
+The data should include a timestamp (in milliseconds) and a value.
+
+2. Add Data to Chart: When data is received, it calls series.addPoint to add the new data point to the chart, and it ensures the chart is continuously updated.
+
+3. Assumed WebSocket Message Structure:
+For this to work, the WebSocket server needs to send data in the following JSON format (as an example):
+
+json
+
+{
+    "timestamp": 1626266362000,
+    "value": 0.75
+}
+
+timestamp: A Unix timestamp in milliseconds (or it can be any format that Highcharts recognizes as a valid datetime).
+value: The actual data point you want to display on the chart.
+
+Make sure your WebSocket server sends data at a regular interval to keep the chart updating dynamically!
+*/
+</script>
+
+</body>
+</html>
+

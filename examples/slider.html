@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootstrap Equalizer</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #282c34;
+            color: white;
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 15px;
+            margin-bottom: 40px;
+        }
+
+        .slider-background {
+            position: absolute;
+            width: 100%;
+            height: 15px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+
+        .slider-fill {
+            position: absolute;
+            height: 100%;
+            background: #468d2a;
+            border-radius: 5px;
+            width: 0%; /* Initially set to 0% */
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            position: absolute;
+            width: 100%;
+            height: 15px;
+            background: transparent;
+            outline: none;
+            z-index: 1;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 5px;
+            height: 25px;
+            background: #e20707;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .equalizer {
+            padding: 20px;
+        }
+
+        .slider-value {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .slider-background::after,
+        .slider-fill::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .slider-fill::after {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container equalizer">
+        <div class="row">
+            <div class="col">
+                <div class="slider-container">
+                    <div class="slider-background">
+                        <div class="slider-fill" id="slider1-fill"></div>
+                    </div>
+                    <input type="range" min="1" max="300" value="300" class="slider" id="slider1" disabled>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        // WebSocket connection for all fermenters
+        const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
+
+        ws.onopen = function () {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            const fermenterId = data['fermenterId'];
+            updateSliderData(fermenterId, data);
+        };
+
+        ws.onclose = function () {
+            console.log('WebSocket connection closed');
+        };
+
+        ws.onerror = function (error) {
+            console.log('WebSocket error: ', error);
+        };
+
+        // Function to update the slider fill and value
+        function updateSliderData(fermenterId, data) {
+            const output = data['output'].toFixed(0);
+            const nextPumpCycleTime = 300 - data['nextPumpCycleTime'];
+            // Update the slider fill
+            const percentage = (output / 300) * 100; // Convert output to percentage
+            $("#slider" + fermenterId + "-fill").css('width', percentage + '%');
+            // Update the slider value (nextPumpCycleTime)
+            $("#slider" + fermenterId).val(nextPumpCycleTime);
+        }
+    </script>
+
+</body>
+
+</html>
