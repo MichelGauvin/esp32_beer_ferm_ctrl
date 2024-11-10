@@ -181,13 +181,13 @@ void setPumpColdCrash(const char *str_value, bool &coldCrash, uint8_t relayPin, 
   if (strcmp(str_value, "ON") == 0)
   {
     coldCrash = true;
-    digitalWrite(relayPin, HIGH);
+    digitalWrite(relayPin, LOW);
     fermenters[fermIndex].pumpStatus = true;
   }
   else
   {
     coldCrash = false;
-    digitalWrite(relayPin, LOW);
+    digitalWrite(relayPin, HIGH);
     fermenters[fermIndex].pumpStatus = false;
   }
 }
@@ -253,7 +253,7 @@ void setup()
   pinMode(RELAY4, OUTPUT);
   for (int i = 0; i < 4; ++i)
   {
-    digitalWrite(fermenters[i].relayPin, LOW);
+    digitalWrite(fermenters[i].relayPin, HIGH);
     fermenters[i].pumpStatus = false;
   }
 
@@ -339,7 +339,7 @@ void setup()
       // If we start or stop the fermenter we set the pump to OFF, the code will determine the later state
       // This allows us to stop the pump immediately when we stop the fermenter.
             updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, EEPROM_ADDR_FERMSTATUS[fermIndex]);
-            digitalWrite(fermenters[fermIndex].relayPin, LOW);
+            digitalWrite(fermenters[fermIndex].relayPin, HIGH);
             fermenters[fermIndex].pumpStatus = false;
         } else if (strstr(key_value, "Setpoint") != NULL) {
             updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, EEPROM_ADDR_SETPOINT[fermIndex]);
@@ -443,12 +443,12 @@ void handleFermenterPIDLoop()
         }
         if (fermenters[i].output * 1000 < millis() - fermenters[i].windowStartTime)
         {
-          digitalWrite(fermenters[i].relayPin, LOW);
+          digitalWrite(fermenters[i].relayPin, HIGH);
           fermenters[i].pumpStatus = false;
         }
         else
         {
-          digitalWrite(fermenters[i].relayPin, HIGH);
+          digitalWrite(fermenters[i].relayPin, LOW);
           fermenters[i].pumpStatus = true;
         }
       }
