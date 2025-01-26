@@ -26,39 +26,41 @@
 #include <MovingAveragePlus.h>
 #include <SPI.h>
 #include <PID_v1.h>
-#include "ESP_EEPROM.h"
-#include <ESP8266WiFi.h>
-#include <Hash.h>
-#include <ESPAsyncTCP.h>
+#include <Preferences.h>
+#include <WiFi.h>
+#include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <ESPAsyncWiFiManager.h>
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
 
-#define RELAY1 12 // D6 IO12
-#define RELAY2 13 // D7 IO13
-#define RELAY3 14 // D5 IO14
-#define RELAY4 15 // D8 IO15
+#define RELAY1 16 //
+#define RELAY2 17 //
+#define RELAY3 18 //
+#define RELAY4 19 //
 
-#define ONE_WIRE_BUS 4 // D2
+#define ONE_WIRE_BUS 4 //
 
-// These are the mandatory persistent values
-// If the controller reboot, it will start from the last known state
-#define EEPROM_ADDR_SETPOINT1 0
-#define EEPROM_ADDR_SETPOINT2 8
-#define EEPROM_ADDR_SETPOINT3 16
-#define EEPROM_ADDR_SETPOINT4 24
-#define EEPROM_ADDR_FERM1STATUS 32
-#define EEPROM_ADDR_FERM2STATUS 34
-#define EEPROM_ADDR_FERM3STATUS 36
-#define EEPROM_ADDR_FERM4STATUS 38
+//Preferences handling
+Preferences preferences;
 
-int EEPROM_ADDR_SETPOINT[4] = {EEPROM_ADDR_SETPOINT1, EEPROM_ADDR_SETPOINT2, EEPROM_ADDR_SETPOINT3, EEPROM_ADDR_SETPOINT4};
-int EEPROM_ADDR_FERMSTATUS[4] = {EEPROM_ADDR_FERM1STATUS, EEPROM_ADDR_FERM2STATUS, EEPROM_ADDR_FERM3STATUS, EEPROM_ADDR_FERM4STATUS};
+#define PREF_NAMESPACE "ferment"
 
-// const char* ssid = "Michel";
-// const char* password = "Mikego20";
+// Setpoint keys
+const char* SETPOINT_KEYS[] = {
+  "setpoint1",
+  "setpoint2",
+  "setpoint3",
+  "setpoint4"
+};
+
+const char* FERMSTATUS_KEYS[] = {
+  "fermStatus1",
+  "fermStatus2",
+  "fermStatus3",
+  "fermStatus4"
+};
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
@@ -135,6 +137,23 @@ const long interval = 1000; // interval between temperature reading (millisecond
 
 //*********** END FIRMWARE VARIABLES DEFINITIONS **********************
 
+// Functions to read, write setpoint and status value on disk
+double getSetpoint(int index) {
+  return preferences.getDouble(SETPOINT_KEYS[index], 20.0);
+}
+
+bool getFermStatus(int index) {
+  return preferences.getBool(FERMSTATUS_KEYS[index], false);
+}
+
+double saveSetpoint(int index, double value) {
+  preferences.putDouble(SETPOINT_KEYS[index], value);
+}
+
+double saveFermStatus(int index, bool value) {
+  preferences.putBool(FERMSTATUS_KEYS[index], value);
+}
+
 //*********** Create a WebSocket server object on port 81 *************
 WebSocketsServer webSocket = WebSocketsServer(3333);
 
@@ -192,7 +211,7 @@ void setPumpColdCrash(const char *str_value, bool &coldCrash, uint8_t relayPin, 
   }
 }
 
-void updateStatus(const char *key, const char *str_value, bool &status, double &output, int &pid_i, int eepromAddress)
+void updateStatus(const char *key, const char *str_value, bool &status, double &output, int &pid_i, int fermIndex)
 {
   if (str_value == NULL)
   {
@@ -210,12 +229,10 @@ void updateStatus(const char *key, const char *str_value, bool &status, double &
     output = 0;
     pid_i = 0;
   }
-
-  EEPROM.put(eepromAddress, status);
-  EEPROM.commit();
+  saveFermStatus(fermIndex, status);
 }
 
-void updateSetpoint(const char *key, const char *str_value, double &setpoint, int eepromAddress)
+void updateSetpoint(const char *key, const char *str_value, double &setpoint, int fermIndex)
 {
   if (str_value == NULL)
   {
@@ -230,9 +247,7 @@ void updateSetpoint(const char *key, const char *str_value, double &setpoint, in
     printf("Conversion error, non-convertible part: %s\n", end);
   }
   setpoint = double_value;
-  Serial.print(eepromAddress);
-  EEPROM.put(eepromAddress, double_value);
-  EEPROM.commit();
+  saveSetpoint(fermIndex, setpoint);
 }
 
 void setup()
@@ -251,6 +266,7 @@ void setup()
   pinMode(RELAY2, OUTPUT);
   pinMode(RELAY3, OUTPUT);
   pinMode(RELAY4, OUTPUT);
+
   for (int i = 0; i < 4; ++i)
   {
     digitalWrite(fermenters[i].relayPin, HIGH);
@@ -259,7 +275,8 @@ void setup()
 
   //************************ END RELAY SETUP ******************************
 
-  EEPROM.begin(64);
+  // Initialize Preferences
+  preferences.begin(PREF_NAMESPACE, false);
 
   //************************ SERIAL COMM SETUP ************************
   Serial.begin(115200);
@@ -267,35 +284,41 @@ void setup()
   //************************ END SERIAL COMM SETUP ********************
 
   //************************ WIFI SETUP *******************************
+  //************************ WIFI SETUP *******************************
   AsyncWiFiManager wifiManager(&server, &dns);
   wifiManager.autoConnect("AutoConnectAP");
   // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
 
-  /*
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("Connected to WiFi");
-  */
+
+  // If Wi-Fi is successfully connected
+  Serial.println("Connected to Wi-Fi!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // Print ESP32 Local IP Address
+  Serial.println(WiFi.localIP());
+
   //************************ END WIFI SETUP ***************************
 
   //************************ START LITTLEFS SETUP *********************
-  if (!LittleFS.begin())
-  {
-    Serial.println("An Error has occurred while mounting LittleFS");
-    return;
-  }
+  
+  if (!LittleFS.begin(true)) {
+          Serial.println("Failed to mount LittleFS");
+          return;
+      }
 
-  Dir dir = LittleFS.openDir("");
-  while (dir.next())
-  {
-    Serial.println("Here the files:\r");
-    Serial.println(dir.fileName());
-    Serial.println(dir.fileSize());
-  }
+      Serial.println("Files in LittleFS:");
+      File root = LittleFS.open("/");
+      File file = root.openNextFile();
+
+      while (file) {
+          Serial.print("FILE: ");
+          Serial.print(file.name());
+          Serial.print("\tSIZE: ");
+          Serial.println(file.size());
+          file = root.openNextFile();
+      }  
   //************************ END LITTLEFS SETUP ***********************
 
   //************************ START Route for root / web page *********/
@@ -338,11 +361,11 @@ void setup()
         if (strstr(key_value, "Status") != NULL) {
       // If we start or stop the fermenter we set the pump to OFF, the code will determine the later state
       // This allows us to stop the pump immediately when we stop the fermenter.
-            updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, EEPROM_ADDR_FERMSTATUS[fermIndex]);
+            updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, fermIndex);
             digitalWrite(fermenters[fermIndex].relayPin, HIGH);
             fermenters[fermIndex].pumpStatus = false;
         } else if (strstr(key_value, "Setpoint") != NULL) {
-            updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, EEPROM_ADDR_SETPOINT[fermIndex]);
+            updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, fermIndex);
         } else if (strstr(key_value, "ColdCrash") != NULL) {
             setPumpColdCrash(str_value, fermenters[fermIndex].coldCrash, fermenters[fermIndex].relayPin, fermIndex);
         }
@@ -356,11 +379,10 @@ void setup()
   server.begin();
 
   //************************ PID SETUP ********************************
-  // Restore setpoints and status from EEPROM
   for (int i = 0; i < 4; ++i)
   {
-    EEPROM.get(EEPROM_ADDR_SETPOINT1 + (i * 8), fermenters[i].setpoint);
-    EEPROM.get(EEPROM_ADDR_FERM1STATUS + (i * 2), fermenters[i].fermStatus);
+    fermenters[i].setpoint = getSetpoint(i);
+    fermenters[i].fermStatus = getFermStatus(i);
   }
 
   for (auto &fermenter : fermenters)
