@@ -7,12 +7,18 @@
 #include <MovingAveragePlus.h>
 #include <ArduinoJson.h>
 
+#define pid_T 30 // PID computation interval in seconds
+#define WindowSize 300 // Each 5 minutes the pump starts for a duration dertermined by the PID
+
 extern Storage storage;
 extern struct Fermenter fermenters[4];  // Array of fermenters (assuming 4 fermenters)
 
 void setPumpColdCrash(const char* str_value, int fermIndex);
 void updateStatus(const char* key, const char* str_value, int fermIndex);
 void updateSetpoint(const char* key, const char* str_value, int fermIndex);
+void setupPID(Fermenter* fermenters, int fermenterCount);
+void updateNextPumpCycleTime();
+void handlePIDLoop(Fermenter* fermenters, int fermenterCount);
 
 struct Fermenter
 {

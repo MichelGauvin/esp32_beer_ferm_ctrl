@@ -9,5 +9,6 @@ extern WebSocketsServer webSocket;
 
 void setupWebServer();
 void handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
+void sendData();
 
 #endif

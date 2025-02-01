@@ -98,3 +98,19 @@ void handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t l
             break;
     }
 }
+
+// Broadcast data with websocket to client
+void sendData()
+{
+      // Send data to websocket
+  if (WiFi.status() == WL_CONNECTED) {
+  for (int i = 0; i < 4; ++i)
+  {
+    String json = fermenters[i].toJson();
+    webSocket.broadcastTXT(json);
+  }
+  }
+  else{
+    printf("No internet.\n");
+  }
+}
