@@ -1,24 +1,23 @@
 /*
-  Arduino PID fermentation temperature Controller (x4)
+  Fermentation PID temperature Controller (x4)
   Made by Michel Gauvin
   www.mikesbrewshop.com
 
   TODO:
-  - Master pump control let the operator to force the pump ON for the desired duration via web command
-  - Implement a cold crash process
-  - Limiter l'affichage de l'output à 0 décimale.
   - Reset the PID when it is turn off:
       PID.SetOutputLimits(0.0, 1.0);  // Forces minimum up to 0.0
       PID.SetOutputLimits(-1.0, 0.0);  // Forces maximum down to 0.0
       PID.SetOutputLimits(PIDMinimum, PIDMaximum);  // Set the limits back to normal
-  - Donner la possibilité d'échanger les données via MQTT.
   - Synchroniser avec NTP la date et l'heure.
-  - Tester ce qui arrive si on perd le Wifi
+  - Tester ce qui arrive si on perd le Wifi:
+    * Testé: Le code continu de s'exécuter
+    * Testé: Si le réseau déjà configuré n'est pas disponible le code va attendre 2 mins pour la configuration du portal, si pas de nouvelle config
+      continuer d'exécuter le code sans internet. Si le réseau revient la connexion wifi sera rétablie.
+    TODO: Il faudrait ajouter une facon de pouvoir reconfigurer le wifi en appuyant sur un bouton lors du redémarrage, se mettre en mode portal pour un temps
+          indéfini.
 
   BUG:
-  - Il y a un bug avec le windows start time, on devrait le resetter lorsqu'on met le PID à "ON"
-  Il est seulement initialisé lors du démarrage de l'application. Ce bug se produit lorsque la lecture
-  de la température est -127.
+  
 */
 
 #include <OneWire.h>
@@ -34,6 +33,7 @@
 #include <ESPAsyncWiFiManager.h>
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
+#include <esp_system.h>
 
 #define RELAY1 16 //
 #define RELAY2 17 //
@@ -96,7 +96,6 @@ struct Fermenter
   int pidIntervalCounter;
   const uint8_t tc[8];
   int relayPin;
-
   // Method to serialize to JSON
   String toJson()
   {
@@ -146,12 +145,26 @@ bool getFermStatus(int index) {
   return preferences.getBool(FERMSTATUS_KEYS[index], false);
 }
 
-double saveSetpoint(int index, double value) {
+int saveSetpoint(int index, double value) {
+  if (index < 0 || index >= 4) {
+    Serial.println("Error: Invalid setpoint index");
+    return -1; // Return error
+  }
+  if (isnan(value)) {
+    Serial.println("Error: Invalid value for setpoint");
+    return -1; // Return error
+  }
   preferences.putDouble(SETPOINT_KEYS[index], value);
+  return 0;
 }
 
-double saveFermStatus(int index, bool value) {
+int saveFermStatus(int index, bool value) {
+  if (index < 0 || index >= 4) {
+    Serial.println("Error: Invalid setpoint index");
+    return -1; // Return error
+  }  
   preferences.putBool(FERMSTATUS_KEYS[index], value);
+  return 0;
 }
 
 //*********** Create a WebSocket server object on port 81 *************
@@ -252,6 +265,7 @@ void updateSetpoint(const char *key, const char *str_value, double &setpoint, in
 
 void setup()
 {
+
   //************************ RELAY SETUP ******************************
   // We need to configure the pinMode to Ferm1_Input_PULLUP first
   // It avoids having a LOW state when configuring the pinMode to Ferm1_Output.
@@ -286,20 +300,31 @@ void setup()
   //************************ WIFI SETUP *******************************
   //************************ WIFI SETUP *******************************
   AsyncWiFiManager wifiManager(&server, &dns);
+  // Set the configuration portal timeout to 5 seconds
+  wifiManager.setConfigPortalTimeout(120); // Timeout in seconds
   wifiManager.autoConnect("AutoConnectAP");
   // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
 
+  /*
+  WiFi.begin(ssid, password);
 
-  // If Wi-Fi is successfully connected
-  Serial.println("Connected to Wi-Fi!");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-
-  // Print ESP32 Local IP Address
-  Serial.println(WiFi.localIP());
-
-  //************************ END WIFI SETUP ***************************
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Déconnecté du Wi-Fi. Tentative de reconnexion...");
+    WiFi.begin(ssid, password); // Reconnexion
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 5) {
+      delay(500);
+      attempts++;
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("Reconnecté au Wi-Fi !");
+      Serial.print("Adresse IP : ");
+      Serial.println(WiFi.localIP());
+    }
+  }
+  */
+  //************************ WIFI SETUP *******************************
 
   //************************ START LITTLEFS SETUP *********************
   
@@ -474,6 +499,12 @@ void handleFermenterPIDLoop()
           fermenters[i].pumpStatus = true;
         }
       }
+      else { //Make sure we adjust the windowStartTime even if the temp reading is -127.
+      if (millis() - fermenters[i].windowStartTime > WindowSize * 1000)
+        {
+          fermenters[i].windowStartTime += WindowSize * 1000;
+        }
+        }
     }
     else
     {
@@ -490,7 +521,6 @@ void loop()
   while ((currentMillis - previousMillis) < interval)
   {
     // The code in this while loop executes between two temperatures measurements.
-
     // Handle WebSocket events
     webSocket.loop();
 
@@ -498,7 +528,7 @@ void loop()
 
     currentMillis = millis();
   }
-
+  
   previousMillis = currentMillis;
 
   // Read temperatures
@@ -516,9 +546,14 @@ void loop()
   updateNextPumpCycleTime();
 
   // Send data to websocket
+  if (WiFi.status() == WL_CONNECTED) {
   for (int i = 0; i < 4; ++i)
   {
     String json = fermenters[i].toJson();
     webSocket.broadcastTXT(json);
+  }
+  }
+  else{
+    printf("No internet.\n");
   }
 }
