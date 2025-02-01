@@ -1,12 +1,13 @@
 #include "fermenter_control.h"
 #include <ArduinoJson.h>
 #include "storage.h"
+#include "relay_control.h"
 
 extern Storage storage;
 extern struct Fermenter fermenters[4];
 
 // Function to set the cold crash status and pump status
-void setPumpColdCrash(const char* str_value, int relayPin, int fermIndex)
+void setPumpColdCrash(const char* str_value, int fermIndex)
 {
   if (str_value == NULL)
   {
@@ -14,7 +15,6 @@ void setPumpColdCrash(const char* str_value, int relayPin, int fermIndex)
     return;
   }
 
-  printf("Cold crash %s, %d\n", str_value, relayPin);
 
   bool coldCrashStatus = (strcmp(str_value, "ON") == 0);
   fermenters[fermIndex].coldCrash = coldCrashStatus;
@@ -22,12 +22,12 @@ void setPumpColdCrash(const char* str_value, int relayPin, int fermIndex)
   // Control the pump based on cold crash status
   if (coldCrashStatus)
   {
-    digitalWrite(relayPin, LOW);
+    updateRelayStatus(fermIndex, false);
     fermenters[fermIndex].pumpStatus = true;
   }
   else
   {
-    digitalWrite(relayPin, HIGH);
+    updateRelayStatus(fermIndex, true);
     fermenters[fermIndex].pumpStatus = false;
   }
 }

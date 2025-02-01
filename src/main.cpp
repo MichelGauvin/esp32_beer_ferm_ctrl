@@ -37,11 +37,7 @@
 #include "wifi_setup.h"
 #include "web_server.h"
 #include "fermenter_control.h"
-
-#define RELAY1 16 //
-#define RELAY2 17 //
-#define RELAY3 18 //
-#define RELAY4 19 //
+#include "relay_control.h"
 
 #define ONE_WIRE_BUS 4 //
 
@@ -71,10 +67,10 @@ double Kp2 = 150, Ki2 = 1, Kd2 = 0;
 
 //Setup fermenters
 Fermenter fermenters[4] = {
-    {1, 0, 0, 0, false, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}, RELAY1},
-    {2, 0, 0, 0, false, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}, RELAY2},
-    {3, 0, 0, 0, false, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92}, RELAY3},
-    {4, 0, 0, 0, false, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80}, RELAY4}};
+    {1, 0, 0, 0, false, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}},
+    {2, 0, 0, 0, false, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}},
+    {3, 0, 0, 0, false, false, false, 0, PID(&fermenters[2].input, &fermenters[2].output, &fermenters[2].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x96, 0xE7, 0x6F, 0x18, 0x01, 0x92}},
+    {4, 0, 0, 0, false, false, false, 0, PID(&fermenters[3].input, &fermenters[3].output, &fermenters[3].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x34, 0xF8, 0x6F, 0x18, 0x01, 0x80}}};
 
 const int pid_T = 30; // PID computation interval in seconds
 const int WindowSize = 300;
@@ -93,60 +89,22 @@ const long interval = 1000; // interval between temperature reading (millisecond
 
 void setup()
 {
-
-  //************************ RELAY SETUP ******************************
-  // We need to configure the pinMode to Ferm1_Input_PULLUP first
-  // It avoids having a LOW state when configuring the pinMode to Ferm1_Output.
-  // IMPORTANT: WE INVERSE THE RELAY LOGIC BY DOING THIS
-  // Issue #3 mikesbrewshop.com
-  pinMode(RELAY1, INPUT_PULLUP);
-  pinMode(RELAY2, INPUT_PULLUP);
-  pinMode(RELAY3, INPUT_PULLUP);
-  pinMode(RELAY4, INPUT_PULLUP);
-  // delay(100);
-  pinMode(RELAY1, OUTPUT);
-  pinMode(RELAY2, OUTPUT);
-  pinMode(RELAY3, OUTPUT);
-  pinMode(RELAY4, OUTPUT);
-
-  for (int i = 0; i < 4; ++i)
-  {
-    digitalWrite(fermenters[i].relayPin, HIGH);
-    fermenters[i].pumpStatus = false;
-  }
-
-  //************************ END RELAY SETUP ******************************
-
-  // Initialize storage
+  // Init relays
+  setupRelays();
+  // Init storage
   storage.begin();
-  //************************ SERIAL COMM SETUP ************************
+  // Init serial communication
   Serial.begin(115200);
   Serial.println(" SETUP ");
-  //************************ END SERIAL COMM SETUP ********************
-
-  //************************ WIFI SETUP *******************************
+  // Init WiFi
   setupWiFi();
-  //************************ WEBSERVER SETUP *******************************
+  // Init Web Server
   setupWebServer();
-  //************************ START LITTLEFS SETUP *********************
-  
+  // Mount file system to have access to index.html
   if (!LittleFS.begin(true)) {
           Serial.println("Failed to mount LittleFS");
           return;
       }
-
-      Serial.println("Files in LittleFS:");
-      File root = LittleFS.open("/");
-      File file = root.openNextFile();
-
-      while (file) {
-          Serial.print("FILE: ");
-          Serial.print(file.name());
-          Serial.print("\tSIZE: ");
-          Serial.println(file.size());
-          file = root.openNextFile();
-      }  
-  //************************ END LITTLEFS SETUP ***********************
 
   //************************ PID SETUP ********************************
   for (int i = 0; i < 4; ++i)
@@ -228,12 +186,12 @@ void handleFermenterPIDLoop()
         }
         if (fermenters[i].output * 1000 < millis() - fermenters[i].windowStartTime)
         {
-          digitalWrite(fermenters[i].relayPin, HIGH);
+          updateRelayStatus(i, true);
           fermenters[i].pumpStatus = false;
         }
         else
         {
-          digitalWrite(fermenters[i].relayPin, LOW);
+          updateRelayStatus(i, false);
           fermenters[i].pumpStatus = true;
         }
       }

@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include "web_server.h"
 #include "fermenter_control.h"
+#include "relay_control.h"
 
 // Declare the server globally (same as in your main sketch)
 extern AsyncWebServer server;
@@ -23,12 +24,12 @@ int getFermenterIndex(const char* key_value) {
 void processFermenterData(const char* key_value, const char* str_value, int fermIndex) {
     if (strstr(key_value, "Status") != NULL) {
         updateStatus(key_value, str_value, fermIndex);
-        digitalWrite(fermenters[fermIndex].relayPin, HIGH);
+        updateRelayStatus(fermIndex, true);
         fermenters[fermIndex].pumpStatus = false;
     } else if (strstr(key_value, "Setpoint") != NULL) {
         updateSetpoint(key_value, str_value, fermIndex);
     } else if (strstr(key_value, "ColdCrash") != NULL) {
-        setPumpColdCrash(str_value, fermenters[fermIndex].relayPin, fermIndex);
+        setPumpColdCrash(str_value, fermIndex);
     }
 }
 

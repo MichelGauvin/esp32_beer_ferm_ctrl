@@ -10,7 +10,7 @@
 extern Storage storage;
 extern struct Fermenter fermenters[4];  // Array of fermenters (assuming 4 fermenters)
 
-void setPumpColdCrash(const char* str_value, int relayPin, int fermIndex);
+void setPumpColdCrash(const char* str_value, int fermIndex);
 void updateStatus(const char* key, const char* str_value, int fermIndex);
 void updateSetpoint(const char* key, const char* str_value, int fermIndex);
 
@@ -29,7 +29,6 @@ struct Fermenter
   unsigned long windowStartTime;
   int pidIntervalCounter;
   const uint8_t tc[8];
-  int relayPin;
   // Method to serialize to JSON
   String toJson()
   {
