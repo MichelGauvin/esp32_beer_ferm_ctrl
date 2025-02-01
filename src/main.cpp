@@ -25,7 +25,6 @@
 #include <MovingAveragePlus.h>
 #include <SPI.h>
 #include <PID_v1.h>
-#include <Preferences.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -34,6 +33,10 @@
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
 #include <esp_system.h>
+#include <storage.h>
+#include "wifi_setup.h"
+#include "web_server.h"
+#include "fermenter_control.h"
 
 #define RELAY1 16 //
 #define RELAY2 17 //
@@ -42,79 +45,31 @@
 
 #define ONE_WIRE_BUS 4 //
 
-//Preferences handling
-Preferences preferences;
-
-#define PREF_NAMESPACE "ferment"
-
-// Setpoint keys
-const char* SETPOINT_KEYS[] = {
-  "setpoint1",
-  "setpoint2",
-  "setpoint3",
-  "setpoint4"
-};
-
-const char* FERMSTATUS_KEYS[] = {
-  "fermStatus1",
-  "fermStatus2",
-  "fermStatus3",
-  "fermStatus4"
-};
-
 // Create AsyncWebServer object on port 80
+// This is to publish the webpage
 AsyncWebServer server(80);
 DNSServer dns;
 
-//************************ TEMPERATURE DEFINITION********************
+// Create a WebSocket server object on port 3333
+WebSocketsServer webSocket = WebSocketsServer(3333);
+
+//Create storage object to save and read setpoint and fermenter status.
+//This will assure to put the controller in the same state (setpoint and fermenter status) when reboot
+//after power outage or anything else.
+Storage storage;
+
+// For temperature reading
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-//************************ END TEMPERATURE DEFINITION ***************
-
 //************************ PID DEFINITION****************************
 // PID Constants and Variables
-
 // Petit fermenteur
 double Kp = 70, Ki = 1, Kd = 0;
 // Gros fermenteur 2 double Kp = 150, Ki = 1, Kd = 0; // J'ai mis le proportionelle a 150 pour le gros fermenteur.
 double Kp2 = 150, Ki2 = 1, Kd2 = 0;
 
-struct Fermenter
-{
-  int fermenterId;
-  double setpoint;
-  double input;
-  double output;
-  bool fermStatus;
-  bool pumpStatus;
-  bool coldCrash;
-  float nextPumpCycleTime;
-  PID pid;
-  MovingAveragePlus<float> movingAvg;
-  unsigned long windowStartTime;
-  int pidIntervalCounter;
-  const uint8_t tc[8];
-  int relayPin;
-  // Method to serialize to JSON
-  String toJson()
-  {
-    StaticJsonDocument<200> doc; // Adjust the size as per your data complexity
-    doc["fermenterId"] = fermenterId;
-    doc["setpoint"] = setpoint;
-    doc["tc1TempC"] = input;
-    doc["output"] = output;
-    doc["nextPumpCycleTime"] = nextPumpCycleTime;
-    doc["pumpStatus"] = pumpStatus;
-    doc["fermStatus"] = fermStatus;
-    doc["coldCrash"] = coldCrash;
-
-    String jsonOutput;
-    serializeJson(doc, jsonOutput);
-    return jsonOutput;
-  };
-};
-
+//Setup fermenters
 Fermenter fermenters[4] = {
     {1, 0, 0, 0, false, false, false, 0, PID(&fermenters[0].input, &fermenters[0].output, &fermenters[0].setpoint, Kp, Ki, Kd, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x0B, 0xF4, 0x6F, 0x18, 0x01, 0x79}, RELAY1},
     {2, 0, 0, 0, false, false, false, 0, PID(&fermenters[1].input, &fermenters[1].output, &fermenters[1].setpoint, Kp2, Ki2, Kd2, REVERSE), MovingAveragePlus<float>(5), 0, 0, {0x28, 0xFF, 0x3F, 0xE2, 0x69, 0x18, 0x03, 0xBE}, RELAY2},
@@ -135,133 +90,6 @@ unsigned long currentMillis = 0;
 const long interval = 1000; // interval between temperature reading (milliseconds)
 
 //*********** END FIRMWARE VARIABLES DEFINITIONS **********************
-
-// Functions to read, write setpoint and status value on disk
-double getSetpoint(int index) {
-  return preferences.getDouble(SETPOINT_KEYS[index], 20.0);
-}
-
-bool getFermStatus(int index) {
-  return preferences.getBool(FERMSTATUS_KEYS[index], false);
-}
-
-int saveSetpoint(int index, double value) {
-  if (index < 0 || index >= 4) {
-    Serial.println("Error: Invalid setpoint index");
-    return -1; // Return error
-  }
-  if (isnan(value)) {
-    Serial.println("Error: Invalid value for setpoint");
-    return -1; // Return error
-  }
-  preferences.putDouble(SETPOINT_KEYS[index], value);
-  return 0;
-}
-
-int saveFermStatus(int index, bool value) {
-  if (index < 0 || index >= 4) {
-    Serial.println("Error: Invalid setpoint index");
-    return -1; // Return error
-  }  
-  preferences.putBool(FERMSTATUS_KEYS[index], value);
-  return 0;
-}
-
-//*********** Create a WebSocket server object on port 81 *************
-WebSocketsServer webSocket = WebSocketsServer(3333);
-
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
-{
-  switch (type)
-  {
-  case WStype_DISCONNECTED:
-    Serial.printf("[%u] Disconnected!\n", num);
-    break;
-  case WStype_CONNECTED:
-  {
-    IPAddress ip = webSocket.remoteIP(num);
-    Serial.printf("[%u] Connection from ", num);
-    Serial.println(ip.toString());
-
-    // Send a welcome message to the client
-    StaticJsonDocument<200> doc;
-    doc["message"] = "Welcome to the WebSocket server!";
-    String json;
-    serializeJson(doc, json);
-    webSocket.sendTXT(num, json);
-  }
-  break;
-  case WStype_TEXT:
-    Serial.printf("[%u] Received text: %s\n", num, payload);
-
-    // Echo the received message back to the client
-    webSocket.sendTXT(num, payload);
-    break;
-  }
-}
-//*********** END WebSocket server object on port 81 ******************
-
-void setPumpColdCrash(const char *str_value, bool &coldCrash, uint8_t relayPin, int fermIndex)
-{
-  printf("Cold crash %s, %d\n", str_value, relayPin);
-  if (str_value == NULL)
-  {
-    printf("Error: str_value is NULL\n");
-    return;
-  }
-
-  if (strcmp(str_value, "ON") == 0)
-  {
-    coldCrash = true;
-    digitalWrite(relayPin, LOW);
-    fermenters[fermIndex].pumpStatus = true;
-  }
-  else
-  {
-    coldCrash = false;
-    digitalWrite(relayPin, HIGH);
-    fermenters[fermIndex].pumpStatus = false;
-  }
-}
-
-void updateStatus(const char *key, const char *str_value, bool &status, double &output, int &pid_i, int fermIndex)
-{
-  if (str_value == NULL)
-  {
-    printf("Error: str_value is NULL\n");
-    return;
-  }
-
-  if (strcmp(str_value, "ON") == 0)
-  {
-    status = true;
-  }
-  else
-  {
-    status = false;
-    output = 0;
-    pid_i = 0;
-  }
-  saveFermStatus(fermIndex, status);
-}
-
-void updateSetpoint(const char *key, const char *str_value, double &setpoint, int fermIndex)
-{
-  if (str_value == NULL)
-  {
-    printf("Error: str_value is NULL\n");
-    return;
-  }
-
-  char *end;
-  double double_value = strtod(str_value, &end);
-  if (*end != '\0')
-  {
-    printf("Conversion error, non-convertible part: %s\n", end);
-  }
-  setpoint = double_value;
-  saveSetpoint(fermIndex, setpoint);
-}
 
 void setup()
 {
@@ -289,43 +117,17 @@ void setup()
 
   //************************ END RELAY SETUP ******************************
 
-  // Initialize Preferences
-  preferences.begin(PREF_NAMESPACE, false);
-
+  // Initialize storage
+  storage.begin();
   //************************ SERIAL COMM SETUP ************************
   Serial.begin(115200);
   Serial.println(" SETUP ");
   //************************ END SERIAL COMM SETUP ********************
 
   //************************ WIFI SETUP *******************************
-  //************************ WIFI SETUP *******************************
-  AsyncWiFiManager wifiManager(&server, &dns);
-  // Set the configuration portal timeout to 5 seconds
-  wifiManager.setConfigPortalTimeout(120); // Timeout in seconds
-  wifiManager.autoConnect("AutoConnectAP");
-  // Print ESP32 Local IP Address
-  Serial.println(WiFi.localIP());
-
-  /*
-  WiFi.begin(ssid, password);
-
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Déconnecté du Wi-Fi. Tentative de reconnexion...");
-    WiFi.begin(ssid, password); // Reconnexion
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 5) {
-      delay(500);
-      attempts++;
-    }
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("Reconnecté au Wi-Fi !");
-      Serial.print("Adresse IP : ");
-      Serial.println(WiFi.localIP());
-    }
-  }
-  */
-  //************************ WIFI SETUP *******************************
-
+  setupWiFi();
+  //************************ WEBSERVER SETUP *******************************
+  setupWebServer();
   //************************ START LITTLEFS SETUP *********************
   
   if (!LittleFS.begin(true)) {
@@ -346,68 +148,11 @@ void setup()
       }  
   //************************ END LITTLEFS SETUP ***********************
 
-  //************************ START Route for root / web page *********/
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(LittleFS, "/index.html"); });
-
-  //************************ END Route for root / web page ************
-
-  // Cette fonction gère les nouveaux setpoint et le démarrage et l'arrêt du fermenteur.
-  server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-            {
-    StaticJsonDocument<512> doc;
-    DeserializationError error = deserializeJson(doc, data);
-
-    if (error) {
-      Serial.print("deserializeJson() failed: ");
-      Serial.println(error.c_str());
-      request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
-      return;
-    }
-
-    for (JsonPair kv : doc.as<JsonObject>()) {
-    const char* key_value = kv.key().c_str();
-    const char* str_value = kv.value().as<const char*>();
-    int fermIndex = -1;
-
-    // Determine the fermenter index based on the key_value
-    if (strcmp(key_value, "ferm1_Status") == 0 || strcmp(key_value, "ferm1_Setpoint") == 0 || strcmp(key_value, "ferm1_ColdCrash") == 0) {
-        fermIndex = 0;
-    } else if (strcmp(key_value, "ferm2_Status") == 0 || strcmp(key_value, "ferm2_Setpoint") == 0 || strcmp(key_value, "ferm2_ColdCrash") == 0) {
-        fermIndex = 1;
-    } else if (strcmp(key_value, "ferm3_Status") == 0 || strcmp(key_value, "ferm3_Setpoint") == 0 || strcmp(key_value, "ferm3_ColdCrash") == 0) {
-        fermIndex = 2;
-    } else if (strcmp(key_value, "ferm4_Status") == 0 || strcmp(key_value, "ferm4_Setpoint") == 0 || strcmp(key_value, "ferm4_ColdCrash") == 0) {
-        fermIndex = 3;
-    }
-
-    // If a valid fermenter index is found, process the status or setpoint
-    if (fermIndex != -1) {
-        if (strstr(key_value, "Status") != NULL) {
-      // If we start or stop the fermenter we set the pump to OFF, the code will determine the later state
-      // This allows us to stop the pump immediately when we stop the fermenter.
-            updateStatus(key_value, str_value, fermenters[fermIndex].fermStatus, fermenters[fermIndex].output, fermenters[fermIndex].pidIntervalCounter, fermIndex);
-            digitalWrite(fermenters[fermIndex].relayPin, HIGH);
-            fermenters[fermIndex].pumpStatus = false;
-        } else if (strstr(key_value, "Setpoint") != NULL) {
-            updateSetpoint(key_value, str_value, fermenters[fermIndex].setpoint, fermIndex);
-        } else if (strstr(key_value, "ColdCrash") != NULL) {
-            setPumpColdCrash(str_value, fermenters[fermIndex].coldCrash, fermenters[fermIndex].relayPin, fermIndex);
-        }
-    }
-
-    }
-    
-    request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"JSON data received\"}"); });
-
-  // ******************************************************************
-  server.begin();
-
   //************************ PID SETUP ********************************
   for (int i = 0; i < 4; ++i)
   {
-    fermenters[i].setpoint = getSetpoint(i);
-    fermenters[i].fermStatus = getFermStatus(i);
+    fermenters[i].setpoint = storage.readSetpoint(i);
+    fermenters[i].fermStatus = storage.readFermStatus(i);
   }
 
   for (auto &fermenter : fermenters)
@@ -428,14 +173,7 @@ void setup()
   // Make asynchronous call to requestTempeature()
   sensors.begin();
   sensors.setWaitForConversion(false);
-  sensors.requestTemperatures();
-
-  ////************************ Start the WebSocket server *******************
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
-
-  Serial.println("WebSocket server started.");
-
+  sensors.requestTemperatures(); 
   //************************ END TEMPERATURE READING SETUP ****************
 }
 
