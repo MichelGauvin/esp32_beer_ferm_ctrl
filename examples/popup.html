@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Button Popup Example</title>
+<style>
+  /* Button styling */
+  .info-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  /* Popup styling */
+  .popup {
+    display: none; /* Hidden by default */
+    position: absolute;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+  }
+</style>
+</head>
+<body>
+<!-- Button -->
+<button class="info-button" onclick="showPopup(event)">Click me for info</button>
+<!-- Popup -->
+<div class="popup" id="popup">
+  This is the information displayed in a popup!
+</div>
+
+<script>
+  // Function to show the popup
+  function showPopup(event) {
+    const popup = document.getElementById('popup');
+    
+    // Set the position of the popup next to the button
+    popup.style.left = event.pageX + 'px';
+    popup.style.top = event.pageY + 'px';
+    
+    // Toggle the popup's visibility
+    popup.style.display = (popup.style.display === 'none' || popup.style.display === '') ? 'block' : 'none';
+  }
+
+  // Hide popup when clicking outside
+  window.addEventListener('click', function(event) {
+    const popup = document.getElementById('popup');
+    const button = document.querySelector('.info-button');
+    if (!popup.contains(event.target) && !button.contains(event.target)) {
+      popup.style.display = 'none';
+    }
+  });
+</script>
+
+</body>
+</html>
