@@ -1,4 +1,6 @@
 
+![My Image](./doc/mikesbrewshop.png)
+
 This code provides a **network-enabled, real-time, multi-fermenter temperature control system** with **remote monitoring capabilities**. The use of PID control ensures **precise temperature stability**, making it ideal for fermentation management.
 
 This code implements a **fermentation temperature control system** for up to **four fermenters** (more if you modify the code) using an FREENOVE ESP32 WROOM BOARD **ESP32 (or similar ESP-based microcontroller)**. The system is designed to monitor and regulate temperature using **PID controllers**, **DS18B20 temperature sensors**, and **relays** to control cooling elements. Here's a high-level breakdown of its functionality:
@@ -101,7 +103,6 @@ Append the following configuration at the end of the http {} block, xxx.xxx.xxx.
             }
         }
 
-![My Image](./doc/mikesbrewshop.png)
 ![My Image](./doc/fermenters.jpg)
 
 |  |  | |
