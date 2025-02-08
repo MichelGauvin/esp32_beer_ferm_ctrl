@@ -3,7 +3,9 @@
 
 This code provides a **network-enabled, real-time, multi-fermenter temperature control system** with **remote monitoring capabilities**. The use of PID control ensures **precise temperature stability**, making it ideal for fermentation management.
 
-This code implements a **fermentation temperature control system** for up to **four fermenters** (more if you modify the code) using an FREENOVE ESP32 WROOM BOARD **ESP32 (or similar ESP-based microcontroller)**. The system is designed to monitor and regulate temperature using **PID controllers**, **DS18B20 temperature sensors**, and **relays** to control cooling elements. Here's a high-level breakdown of its functionality:
+This code implements a **fermentation temperature control system** for up to **four fermenters** (more if you modify the code) using an FREENOVE ESP32 WROOM BOARD **ESP32 (or similar ESP-based microcontroller)**. The system is designed to monitor and regulate temperature using **PID controllers**, **DS18B20 temperature sensors**, and **relays** to control cooling elements. This code controls 4 aquarium pumps inside a glycol chiller.
+
+Here's a high-level breakdown of its functionality:
 
 This code is developped using Visual Studio Code with the Platformio extension.
 
