@@ -43,13 +43,19 @@ This code is developped using Visual Studio Code with the Platformio extension.
      - Handles WebSocket events.
 
 ### **TODO List**
-- **Synchronize time with NTP** for accurate logging and scheduling.  
-- **WiFi reconfiguration mode** (pressing a button during reboot to enter setup mode).  
-- **Clarify inverted relay logic** in documentation.  
-- **Make PID settings adjustable** via the web interface.  
+- **Synchronize time with NTP** for accurate logging and scheduling.
+- **WiFi reconfiguration mode** pressing a hardware button during reboot to enter setup mode.
+- **Clarify inverted relay logic** in documentation.
+- **Make PID settings adjustable** via the web interface.
 - **Dynamically detect and assign DS18B20 sensors** instead of hardcoding addresses.
 - **Add a heating device** add heating device for fermentation temperature above ambiant temperature.
 - **Design a board with kicad** that integrates all the electronics.
+- **Provide a list of parts** I used for this project.
+- **Status** indicate the signal strenght of the wifi connection.
+- **Tool to create a fementation temperature profile** over time.
+- **Plot graphic of different parameters** including data coming from Tilt devices etc...
+- **Publish data through MQTT**
+- **Create a branch for keezer temperature control** which would turn ON/OFF the keezer less often then the aquarium pump for fermentation temperature control.
 
 ### Source code
 Here's the source code and header files for this project:
