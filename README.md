@@ -70,6 +70,9 @@ include/
 ├── storage.h
 ├── web_server.h
 └── wifi_setup.h
+data
+├── favicon.ico
+└── index.html
 ```
 
 # Configuration
