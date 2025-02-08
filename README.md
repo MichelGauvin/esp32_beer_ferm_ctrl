@@ -47,6 +47,27 @@ This code is developped using Visual Studio Code with the Platformio extension.
 - **Add a heating device** add heating device for fermentation temperature above ambiant temperature.
 - **Design a board with kicad** that integrates all the electronics.
 
+### Source code
+Here's the source code and header files for this project:
+```
+src/
+├── fermenter_control.cpp
+├── main.cpp
+├── read_ds18b20_temp.cpp
+├── relay_control.cpp
+├── storage.cpp
+├── web_server.cpp
+└── wifi_setup.cpp
+include/
+├── fermenter_control.h
+├── read_ds18b20_temp.h
+├── README
+├── relay_control.h
+├── storage.h
+├── web_server.h
+└── wifi_setup.h
+```
+
 # Configuration
 
 ### Configuration for websocket
