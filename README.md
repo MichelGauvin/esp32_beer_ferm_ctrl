@@ -77,3 +77,5 @@ Append the following configuration at the end of the http {} block, xxx.xxx.xxx.
                 proxy_set_header Host $host;
             }
         }
+
+![My Image](./doc/mikesbrewshop.png)
