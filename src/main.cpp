@@ -2,19 +2,11 @@
   Fermentation PID Temperature Controller (x4)
   Made by Michel Gauvin
   www.mikesbrewshop.com
-
   TODO:
-  - Reset the PID when it is turned off:
-      PID.SetOutputLimits(0.0, 1.0);  // Forces minimum up to 0.0
-      PID.SetOutputLimits(-1.0, 0.0);  // Forces maximum down to 0.0
-      PID.SetOutputLimits(PIDMinimum, PIDMaximum);  // Set the limits back to normal
   - Synchronize date and time with NTP.
   - Add a method to reconfigure WiFi by pressing a button during reboot,
     entering portal mode indefinitely.
   - Expliquer pourquoi la logique des relais est inversée.
-
-  BUG:
-  - (Add known issues here)
 */
 
 #include <OneWire.h>

@@ -49,6 +49,8 @@ void updateStatus(const char* key, const char* str_value, int fermIndex)
   {
     fermenters[fermIndex].output = 0;
     fermenters[fermIndex].pidIntervalCounter = 0;
+    fermenters[fermIndex].pid.SetMode(MANUAL);    // Stop PID
+    fermenters[fermIndex].pid.SetMode(AUTOMATIC); // Restart PID
   }
 
   storage.saveFermStatus(fermIndex, fermStatus);
