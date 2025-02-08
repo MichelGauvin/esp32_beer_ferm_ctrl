@@ -45,11 +45,12 @@ This code is developped using Visual Studio Code with the Platformio extension.
 
 # Configuration
 
-Il faut mettre la configuration suivante dans le fichier suivant qui est utilisé par le conteneur nginx:
+### Configuration for websocket
+If you publish your website hosted on the ESP32 on the internet, and using Nginx docker container as a reverse proxy, you need to add the following configuration to the specified file used by the Nginx container:
 
-fichier: /srv/docker/nginx/etc/nginx.conf
+File: /srv/docker/nginx/etc/nginx.conf
 
-Mettre la configuration suivante à la fin de l'élément http {}:
+Append the following configuration at the end of the http {} block:
 
         server {
             listen 443 ssl;
