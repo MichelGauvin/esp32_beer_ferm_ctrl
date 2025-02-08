@@ -74,6 +74,21 @@ include/
 
 # Configuration
 
+### Modification for websocket address
+In the /data/index.html change the following line:
+
+```
+// WebSocket connection for all fermenters
+    const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
+```
+FOR
+
+Put the ip address of your ESP32
+```
+// WebSocket connection for all fermenters
+    const ws = new WebSocket('ws://xxx.xxx.xxx.xxx:3333/ws');
+```
+
 ### Configuration for websocket
 If you publish your website hosted on the ESP32 on the internet, and using Nginx docker container as a reverse proxy, you need to add the following configuration to the specified file used by the Nginx container:
 

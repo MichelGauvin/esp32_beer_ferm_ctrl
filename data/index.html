@@ -605,7 +605,6 @@
 
     // WebSocket connection for all fermenters
     const ws = new WebSocket('wss://nodemcu.mikesbrewshop.com/ws');
-
     ws.onopen = function () {
       console.log('WebSocket connection established');
     };
