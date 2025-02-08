@@ -50,7 +50,7 @@ If you publish your website hosted on the ESP32 on the internet, and using Nginx
 
 File: /srv/docker/nginx/etc/nginx.conf
 
-Append the following configuration at the end of the http {} block:
+Append the following configuration at the end of the http {} block, xxx.xxx.xxx.xxx is the ip address of your ESP32 on your local network:
 
         server {
             listen 443 ssl;
@@ -60,7 +60,7 @@ Append the following configuration at the end of the http {} block:
             ssl_certificate_key /etc/nginx/certificate/privkey1.pem;
 
             location / {
-                proxy_pass http://10.0.0.143;
+                proxy_pass http://xxx.xxx.xxx.xxx;
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade $http_upgrade;
                 proxy_set_header Connection "upgrade";
@@ -68,7 +68,7 @@ Append the following configuration at the end of the http {} block:
             }
 
             location /ws {
-                proxy_pass http://10.0.0.143:3333;  # WebSocket server port
+                proxy_pass http://xxx.xxx.xxx.xxx:3333;  # WebSocket server port
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade $http_upgrade;
                 proxy_set_header Connection "upgrade";
