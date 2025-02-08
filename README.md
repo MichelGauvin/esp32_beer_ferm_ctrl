@@ -26,8 +26,9 @@ This code is developped using Visual Studio Code with the Platformio extension.
    - Saves fermenter **setpoints** and **status** for persistence across reboots using <Preferences.h>
 
 5. **Relay Control**  
-   - Interfaces with relays to **turn heating/cooling devices on/off** based on PID output.  
+   - Interfaces with relays to **turn cooling devices on/off** based on PID output.  
    - Relays are initialized in `setupRelays()`.
+   - The relay are solid state relay.
 
 6. **Event Loop & Timing**  
    - The `loop()` function:  
@@ -42,6 +43,7 @@ This code is developped using Visual Studio Code with the Platformio extension.
 - **Clarify inverted relay logic** in documentation.  
 - **Make PID settings adjustable** via the web interface.  
 - **Dynamically detect and assign DS18B20 sensors** instead of hardcoding addresses.
+- **Add a heating device** add heating device for fermentation temperature above ambiant temperature.
 
 # Configuration
 
