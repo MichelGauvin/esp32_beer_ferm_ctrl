@@ -15,6 +15,7 @@ This code is developped using Visual Studio Code with the Platformio extension.
    - Uses different PID tuning parameters (`Kp`, `Ki`, `Kd`) for **small and large fermenters**.  
    - The control logic is **inverted**, meaning relay activation logic may be reversed.
    - The PID operates within a 300-second time window, during which it can activate the pump for a specific duration to cool the fermenter coil. For small fermenters, this duration is limited to 30 seconds, whereas for large fermenters, it can span the entire window.
+   - Temperature measurements are taken every second and averaged, while the PID computation is performed every 30 seconds.
 
 3. **WiFi & Web Server**  
    - Connects to WiFi via `setupWiFi()`.  
