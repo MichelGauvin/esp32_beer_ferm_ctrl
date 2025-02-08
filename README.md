@@ -45,6 +45,7 @@ This code is developped using Visual Studio Code with the Platformio extension.
 - **Make PID settings adjustable** via the web interface.  
 - **Dynamically detect and assign DS18B20 sensors** instead of hardcoding addresses.
 - **Add a heating device** add heating device for fermentation temperature above ambiant temperature.
+- **Design a board with kicad** that integrates all the electronics.
 
 # Configuration
 
@@ -80,3 +81,8 @@ Append the following configuration at the end of the http {} block, xxx.xxx.xxx.
         }
 
 ![My Image](./doc/mikesbrewshop.png)
+![My Image](./doc/fermenters.jpg)
+
+|  |  | |
+|---------|---------|---------|
+| ![](./doc/controller.jpg) | ![](./doc/electronics_1.jpg) | ![](./doc/electronics_2.jpg) |
