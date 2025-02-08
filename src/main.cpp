@@ -7,6 +7,8 @@
   - Add a method to reconfigure WiFi by pressing a button during reboot,
     entering portal mode indefinitely.
   - Expliquer pourquoi la logique des relais est inversée.
+  - Be able to set all the variables that can be settable, ki, kp, kd, windows size, etc...
+  - Be able to discover ds18b20 sensors and associate to fermenter and register in flash memory.
 */
 
 #include <OneWire.h>
