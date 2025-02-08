@@ -1,7 +1,9 @@
 
 This code provides a **network-enabled, real-time, multi-fermenter temperature control system** with **remote monitoring capabilities**. The use of PID control ensures **precise temperature stability**, making it ideal for fermentation management.
 
-This code implements a **fermentation temperature control system** for up to **four fermenters** using an **ESP32 (or similar ESP-based microcontroller)**. The system is designed to monitor and regulate temperature using **PID controllers**, **DS18B20 temperature sensors**, and **relays** to control heating or cooling elements. Here's a high-level breakdown of its functionality:
+This code implements a **fermentation temperature control system** for up to **four fermenters** (more if you modify the code) using an FREENOVE ESP32 WROOM BOARD **ESP32 (or similar ESP-based microcontroller)**. The system is designed to monitor and regulate temperature using **PID controllers**, **DS18B20 temperature sensors**, and **relays** to control cooling elements. Here's a high-level breakdown of its functionality:
+
+This code is developped using Visual Studio Code with the Platformio extension.
 
 ### **Main Features**
 1. **Temperature Sensing**  
@@ -12,6 +14,7 @@ This code implements a **fermentation temperature control system** for up to **f
    - Implements **Proportional-Integral-Derivative (PID) control loops** for precise temperature regulation.  
    - Uses different PID tuning parameters (`Kp`, `Ki`, `Kd`) for **small and large fermenters**.  
    - The control logic is **inverted**, meaning relay activation logic may be reversed.
+   - The PID operates within a 300-second time window, during which it can activate the pump for a specific duration to cool the fermenter coil. For small fermenters, this duration is limited to 30 seconds, whereas for large fermenters, it can span the entire window.
 
 3. **WiFi & Web Server**  
    - Connects to WiFi via `setupWiFi()`.  
@@ -19,8 +22,8 @@ This code implements a **fermentation temperature control system** for up to **f
    - Supports **WebSockets** (port **3333**) for real-time communication with clients.
 
 4. **Persistent Storage**  
-   - Uses **LittleFS** for storing and retrieving configuration data.  
-   - Saves fermenter **setpoints** and **status** for persistence across reboots.
+   - Uses **LittleFS** for storing and retrieving webpage.  
+   - Saves fermenter **setpoints** and **status** for persistence across reboots using <Preferences.h>
 
 5. **Relay Control**  
    - Interfaces with relays to **turn heating/cooling devices on/off** based on PID output.  
