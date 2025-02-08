@@ -24,7 +24,7 @@ int getFermenterIndex(const char* key_value) {
 void processFermenterData(const char* key_value, const char* str_value, int fermIndex) {
     if (strstr(key_value, "Status") != NULL) {
         updateStatus(key_value, str_value, fermIndex);
-        updateRelayStatus(fermIndex, true);
+        updateRelayStatus(fermIndex, false);
         fermenters[fermIndex].pumpStatus = false;
     } else if (strstr(key_value, "Setpoint") != NULL) {
         updateSetpoint(key_value, str_value, fermIndex);

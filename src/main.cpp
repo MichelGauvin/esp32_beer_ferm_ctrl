@@ -11,6 +11,7 @@
   - Synchronize date and time with NTP.
   - Add a method to reconfigure WiFi by pressing a button during reboot,
     entering portal mode indefinitely.
+  - Expliquer pourquoi la logique des relais est inversée.
 
   BUG:
   - (Add known issues here)

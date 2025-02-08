@@ -22,12 +22,12 @@ void setPumpColdCrash(const char* str_value, int fermIndex)
   // Control the pump based on cold crash status
   if (coldCrashStatus)
   {
-    updateRelayStatus(fermIndex, false);
+    updateRelayStatus(fermIndex, true);
     fermenters[fermIndex].pumpStatus = true;
   }
   else
   {
-    updateRelayStatus(fermIndex, true);
+    updateRelayStatus(fermIndex, false);
     fermenters[fermIndex].pumpStatus = false;
   }
 }
@@ -42,6 +42,7 @@ void updateStatus(const char* key, const char* str_value, int fermIndex)
   }
 
   bool fermStatus = (strcmp(str_value, "ON") == 0);
+  printf("Button = %s\n", str_value);
   fermenters[fermIndex].fermStatus = fermStatus;
 
   if (!fermStatus)
@@ -127,9 +128,11 @@ void handlePIDLoop(Fermenter* fermenters, int fermenterCount) {
         }
 
         if (fermenters[i].output * 1000 < millis() - fermenters[i].windowStartTime) {
-          updateRelayStatus(i, true);
-        } else {
           updateRelayStatus(i, false);
+          fermenters[i].pumpStatus = false;
+        } else {
+          updateRelayStatus(i, true);
+          fermenters[i].pumpStatus = true;
         }
       }
     } else {
