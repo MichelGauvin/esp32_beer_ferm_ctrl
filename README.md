@@ -80,8 +80,14 @@ data
 ├── favicon.ico
 └── index.html
 ```
+# Wifi setup
+When powered on, the ESP32 starts in fallback mode as a Wi-Fi access point. You can connect to it from your phone and access 192.168.4.1 to configure the Wi-Fi network the controller should use. Once configured, the ESP32 will automatically reconnect to the saved network on subsequent boot-ups.
 
-# Configuration
+If the controller loses Wi-Fi for any reason, it will continue operating and automatically reconnect once the network is available again.
+
+I still need to add a feature to change the Wi-Fi network, as noted in the TODO WiFi reconfiguration mode.
+
+# Code modification  you need to perform
 
 ### Modification for websocket address
 In the /data/index.html change the following line:
@@ -97,6 +103,8 @@ Put the ip address of your ESP32
 // WebSocket connection for all fermenters
     const ws = new WebSocket('ws://xxx.xxx.xxx.xxx:3333/ws');
 ```
+
+# Configuration
 
 ### Configuration for websocket
 If you publish your website hosted on the ESP32 on the internet, and using Nginx docker container as a reverse proxy, you need to add the following configuration to the specified file used by the Nginx container:
@@ -128,6 +136,7 @@ Append the following configuration at the end of the http {} block, xxx.xxx.xxx.
                 proxy_set_header Host $host;
             }
         }
+
 
 ![My Image](./doc/fermenters.jpg)
 
